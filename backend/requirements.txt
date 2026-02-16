@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+torch
+torchaudio
+librosa
+numpy
+pandas
+scikit-learn
+pydantic
+tqdm
+matplotlib
+soundfile
