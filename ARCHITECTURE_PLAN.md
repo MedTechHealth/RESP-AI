@@ -1,4 +1,4 @@
-# Resp-AI System Architecture (v2.0)
+# Resp-AI System Architecture (v3.0)
 
 ## 1. System Overview
 
@@ -35,7 +35,7 @@ The system is designed to be **modular** and **extensible**, allowing for future
 
 The `backend/main.py` coordinates the flow:
 
-1.  **Input:** Patient Audio (WAV/MP3).
+1.  **Input:** Patient Audio (WAV/MP3 or Live PCM Stream).
 2.  **Preprocessing (`backend/preprocessing.py`):**
     - Resample to 16kHz.
     - Band-pass filter (50-2500Hz).
@@ -50,8 +50,23 @@ The `backend/main.py` coordinates the flow:
     - Risk Score mapped to "Low/Mild/High".
     - Disease Probabilities mapped to specific labels (e.g., "Asthma (85%)").
     - **Safety Layer:** A rule-based check ensures "High Risk" is flagged even if Stage 2 is unsure of the specific disease.
+    - **Gatekeeper Logic:** If Stage 1 `risk_score` is < 3.5, the system overrides Stage 2 output to "No abnormality detected," preventing misleading disease associations for healthy subjects.
 
-## 4. Developer Guide: How to Extend
+## 4. Frontend Architecture (The Instrument)
+
+The Flutter frontend is built as a reactive instrument for high-fidelity data capture.
+
+### 4.1 State Management (Riverpod)
+- **`recordingProvider`:** Manages the entire lifecycle of a recording session (Idle, Recording, Streaming, Analyzing, Result).
+- **`audioServiceProvider`:** Scopes the native audio recorder and permissions.
+
+### 4.2 Streaming Protocol (WebSockets)
+- **Handshake:** On start, a WebSocket connection is opened to `/api/ws-analyze`.
+- **Transmission:** Raw PCM 16-bit Mono (16kHz) chunks are sent in binary format.
+- **Command Control:** The text command `FINISH` is sent to trigger the analysis phase on the backend.
+- **Cleanup:** The socket is closed immediately after the JSON result is received and the user is navigated to the report.
+
+## 5. Developer Guide: How to Extend
 
 ### Adding a New Disease
 
@@ -69,7 +84,7 @@ To add a new disease (e.g., Tuberculosis) to the system:
 - **Do not touch Stage 1** (unless you find a bug).
 - **Focus on Stage 2 Data:** The quality of the "Brain" depends entirely on the variety of disease-labeled data in the Fraiwan (or equivalent) dataset.
 
-## 5. File Structure Responsibilities
+## 6. File Structure Responsibilities
 
 - `backend/model.py`: Defines the Stage 1 CNN (The Ears).
 - `backend/model_stage2.py`: Defines the Stage 2 Classifier (The Brain).

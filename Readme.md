@@ -1,318 +1,87 @@
 # Resp-AI 🫁
 
-**## Acoustic Respiratory Risk Assessment System using Deep Learning**
+**Acoustic Respiratory Risk Assessment System using Real-time Deep Learning Streaming**
 
 ---
 
 ## 1. Project Overview
 
-Resp-AI is an end-to-end artificial intelligence system designed to **analyze respiratory audio signals** (lung sounds) and estimate **respiratory health risk** using signal processing and deep learning techniques.
+Resp-AI is an end-to-end artificial intelligence system designed to **analyze respiratory audio signals** (lung sounds) and estimate **respiratory health risk** in real-time. By utilizing a high-performance Python backend and a responsive Flutter frontend, Resp-AI provides immediate feedback on respiratory health.
 
-The system does **not perform clinical diagnosis**. Instead, it functions as a **screening and decision-support tool**, identifying abnormal respiratory sound patterns (such as wheezes and crackles) and mapping them to an interpretable **risk score** for early triage and monitoring.
-
----
-
-## 2. Motivation
-
-Respiratory diseases are among the leading causes of global morbidity. Traditional diagnosis requires trained clinicians and medical equipment, which may not be accessible in rural or low-resource settings.
-
-Resp-AI aims to:
-
-- Enable **early screening** using low-cost microphones
-- Assist **telemedicine and remote monitoring**
-- Provide **explainable, non-invasive risk estimation**
-- Support healthcare professionals, not replace them
+The system identifies abnormal respiratory sound patterns (such as wheezes and crackles) and maps them to an interpretable **risk score** and **disease association**, mimicking a clinical triage workflow.
 
 ---
 
-## 3. Scope and Limitations
+## 2. Key Features
 
-### What Resp-AI CAN do
-
-- Detect abnormal respiratory sound patterns
-- Classify sounds as normal or abnormal
-- Estimate a continuous respiratory risk score (0–10)
-- Provide triage-level recommendations
-
-### What Resp-AI CANNOT do
-
-- Diagnose diseases (e.g., asthma, pneumonia)
-- Replace medical professionals
-- Act as a certified medical device
-
-This distinction is intentional and critical for ethical and academic correctness.
+- **🚀 Real-time Streaming:** Audio is streamed directly from the microphone to the AI engine via WebSockets, eliminating disk latency and improving reliability.
+- **🏥 Two-Stage Cascade AI:**
+    - **Stage 1 (Symptom Detection):** Identifies abnormalities (Crackles/Wheezes) and generates a 0-10 Risk Score.
+    - **Stage 2 (Disease Association):** Maps acoustic embeddings to probable conditions (Asthma, COPD, etc.).
+- **🛡️ Gatekeeper Logic:** Intelligent filtering that prevents misleading disease labels for healthy subjects.
+- **📱 Cross-Platform Frontend:** Built with Flutter for a seamless experience on Android, iOS, and Desktop.
+- **📉 Live Visualization:** Real-time feedback during the recording process.
 
 ---
 
-## 4. System Architecture (High-Level)
+## 3. System Architecture (High-Level)
 
-Respiratory Audio Input
-↓
-Signal Preprocessing
-↓
-Feature Extraction (MFCC)
-↓
-Deep Learning Model (CNN)
-↓
-Probability Estimation
-↓
-Risk Scoring & Smoothing
-↓
-Final Output
+```text
+[ Patient Mic ] ──(Raw PCM Stream)──> [ WebSocket Gateway ]
+                                              │
+[ Final Report ] <──(JSON Result)─── [ AI Inference Engine ]
+      │                                       │
+      └─ Stage 1: Symptom Detection (CNN) ────┘
+      └─ Stage 2: Disease Association (MLP) ──┘
+```
 
 ---
 
-## 5. Algorithmic Pipeline (Detailed)
+## 4. Algorithmic Pipeline
 
-### 5.1 Audio Acquisition
+### 4.1 Signal Processing
+- **Sampling Rate:** 16kHz Mono (Medical Standard).
+- **Butterworth Band-Pass Filter:** Preserves 50Hz - 2500Hz to focus on medical acoustic features.
+- **Spectral Subtraction:** Reduces stationary background noise for cleaner input.
+- **Feature Extraction:** Generates Log-Mel Spectrograms (40 MFCC coefficients).
 
-- Input: WAV audio (lung sounds)
-- Source: Digital stethoscope / smartphone microphone / dataset recordings
-- Sampling rate standardized during preprocessing
-
----
-
-### 5.2 Butterworth Band-Pass Filter
-
-**Purpose:**  
-Remove irrelevant frequency components while preserving signal amplitude.
-
-**Reason for choice:**  
-Butterworth filters have a maximally flat frequency response, avoiding distortion of medically relevant acoustic features.
+### 4.2 Deep Learning (CNN)
+- **Architecture:** 3-Layer Convolutional Neural Network with Max Pooling and Dropout.
+- **Training Data:** ICBHI 2017 Challenge Dataset, COSWARA, and Fraiwan Lung Sound Dataset.
+- **Optimization:** Z-Score Normalization and Hamming Windowing for spectral stability.
 
 ---
 
-### 5.3 Spectral Subtraction
+## 5. Getting Started
 
-**Purpose:**  
-Reduce stationary background noise.
+### 5.1 Backend (Python)
+1. Navigate to the `backend/` directory.
+2. Install dependencies: `pip install -r requirements.txt`.
+3. Start the server: `python main.py`.
+   - The server will run on `http://127.0.0.1:8000`.
 
-**Method:**  
-Estimate noise spectrum and subtract it from the signal spectrum in the frequency domain.
-
-**Benefit:**  
-Improves signal-to-noise ratio for real-world recordings.
-
----
-
-### 5.4 Short-Time Fourier Transform (STFT)
-
-**Purpose:**  
-Convert time-domain signal into time–frequency representation.
-
-**Why STFT:**  
-Respiratory sounds are non-stationary; STFT captures temporal variations in frequency.
+### 5.2 Frontend (Flutter)
+1. Navigate to the `app/` directory.
+2. Install dependencies: `flutter pub get`.
+3. Run the application: `flutter run`.
 
 ---
 
-### 5.5 Hamming Window
+## 6. Ethical & Legal Considerations
 
-**Purpose:**  
-Reduce spectral leakage during STFT.
-
-**Effect:**  
-Improves frequency resolution and reduces edge artifacts.
+- **NOT A MEDICAL DEVICE:** Resp-AI is a research prototype for screening and educational purposes. It does not provide clinical diagnoses.
+- **Privacy First:** In the current version, audio is processed in-memory and not stored on disk, ensuring maximum patient privacy.
+- **Transparency:** All outputs include a probabilistic disclaimer and advise consultation with a medical professional.
 
 ---
 
-### 5.6 Mel Filter Bank
+## 7. Future Roadmap
 
-**Purpose:**  
-Map linear frequency spectrum to Mel scale.
-
-**Reason:**  
-Aligns acoustic features with human auditory perception.
+- **Research Vault:** Automatic archiving of anonymized audio for model retraining.
+- **Multi-modal Fusion:** Integrating vitals (Heart Rate, SpO2) into the risk assessment.
+- **On-device Inference:** Porting the CNN models to TensorFlow Lite for offline use.
 
 ---
 
-### 5.7 Log Mel Energies
-
-**Purpose:**  
-Compress dynamic range and stabilize variance.
-
----
-
-### 5.8 Discrete Cosine Transform (DCT-II)
-
-**Purpose:**  
-Decorrelate Mel energies to generate MFCCs.
-
-**Output:**  
-Compact, low-dimensional feature vectors suitable for ML.
-
----
-
-### 5.9 Z-Score Normalization
-
-**Purpose:**  
-Standardize features across datasets and devices.
-
----
-
-### 5.10 Convolutional Neural Network (CNN)
-
-**Architecture:**
-
-- Convolution layers
-- ReLU activation
-- Pooling layers
-- Fully connected layers
-
-**Input:** MFCC spectrograms  
-**Output:** Class probabilities
-
-**Why CNN:**  
-MFCCs form image-like representations, ideal for convolutional pattern learning.
-
----
-
-### 5.11 Softmax Classifier
-
-**Purpose:**  
-Convert logits into normalized probability distribution.
-
----
-
-### 5.12 Risk Score Mapping
-
-**Method:** Min–Max scaling  
-**Range:** 0 (Normal) → 10 (High Risk)
-
----
-
-### 5.13 Moving Average Filter
-
-**Purpose:**  
-Smooth risk values across time to reduce false positives.
-
----
-
-### 5.14 Threshold-Based Decision Rule
-
-| Risk Range | Interpretation |
-| ---------- | -------------- |
-| 0–3        | Normal         |
-| 4–6        | Mild Risk      |
-| 7–10       | High Risk      |
-
----
-
-## 6. Dataset Strategy
-
-### 6.1 Training Philosophy
-
-- Learn **sound abnormalities first**
-- Learn **disease-associated risk patterns second**
-- Never claim clinical diagnosis
-
----
-
-### 6.2 Primary Training Dataset (Tier-1)
-
-- ICBHI 2017 Respiratory Sound Database
-- Expert-annotated wheeze/crackle events
-- High academic credibility
-
-### 6.3 Supplementary Datasets (Tier-2)
-
-- COSWARA (breathing & cough with symptom metadata)
-- Other open research respiratory datasets
-
-### 6.4 Noise Augmentation
-
-- Environmental noise datasets (ESC-50, UrbanSound8K)
-- Used only for robustness
-
----
-
-## 7. Training Strategy
-
-### 7.1 Incremental Training
-
-- Initial training on Tier-1 dataset
-- Continued training (fine-tuning) with Tier-2 datasets
-- Previously learned weights preserved
-
-### 7.2 Avoiding Catastrophic Forgetting
-
-- Mix old and new data during fine-tuning
-- Use lower learning rate
-- Optionally freeze early CNN layers
-
----
-
-## 8. Evaluation Metrics
-
-- Accuracy
-- Precision / Recall
-- F1-score
-- ROC-AUC
-- Confusion Matrix
-
-Evaluation is performed **across datasets** to ensure generalization.
-
----
-
-## 9. Deployment Concept
-
-### Possible Platforms
-
-- Desktop application
-- Mobile application
-- Embedded system (edge AI)
-
-### Real-Time Capability
-
-- MFCC extraction: real-time
-- CNN inference: lightweight model
-- End-to-end latency suitable for live screening
-
----
-
-## 10. Ethical & Legal Considerations
-
-- No medical diagnosis claims
-- Transparent explainable outputs
-- User advised to consult professionals
-- Dataset licenses respected
-- Designed as a **screening & triage tool**
-
----
-
-## 11. Applications
-
-- Telemedicine support
-- Remote health monitoring
-- Rural healthcare screening
-- Academic research
-- Educational demonstrations
-
----
-
-## 12. Future Enhancements
-
-- Multimodal fusion (audio + vitals)
-- Transformer-based audio models
-- On-device learning
-- Federated learning for privacy
-- Clinical validation studies (long-term)
-
----
-
-## 13. Conclusion
-
-Resp-AI demonstrates that **respiratory risk screening using acoustic signals and AI is technically feasible, ethically responsible, and practically valuable** when framed correctly.
-
-By combining signal processing, perceptual modeling, and deep learning, Resp-AI bridges the gap between raw respiratory sounds and actionable health insights.
-
----
-
-## 14. Disclaimer
-
-Resp-AI is a research and educational project.  
-It is **not a medical device** and must not be used for clinical diagnosis.
-
----
-
-© Resp-AI Project  
-Engineering Documentation
+© 2026 Resp-AI Project Team
+Engineering & Documentation

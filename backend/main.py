@@ -1,7 +1,10 @@
 import os
 import torch
 import shutil
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import io
+import numpy as np
+import librosa
+from fastapi import FastAPI, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from backend.model import RespiratoryCNN
@@ -68,6 +71,106 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
+@app.websocket("/api/ws-analyze")
+async def websocket_analyze(websocket: WebSocket):
+    await websocket.accept()
+    audio_buffer = io.BytesIO()
+    print("WebSocket client connected.")
+    
+    try:
+        while True:
+            # We use receive() to handle both bytes and text
+            message = await websocket.receive()
+            
+            if "bytes" in message:
+                audio_buffer.write(message["bytes"])
+            
+            elif "text" in message:
+                if message["text"] == "FINISH":
+                    # Time to analyze!
+                    print(f"Received FINISH command. Buffer size: {audio_buffer.tell()} bytes.")
+                    
+                    if audio_buffer.tell() < 1000:
+                        await websocket.send_json({"error": "Audio too short."})
+                        continue
+
+                    # Process
+                    try:
+                        # 1. Get raw bytes
+                        raw_bytes = audio_buffer.getvalue()
+                        
+                        # 2. Convert raw PCM 16-bit bytes to numpy array
+                        # Flutter sends 16-bit Little Endian PCM
+                        audio_np = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32)
+                        
+                        # 3. Normalize to [-1.0, 1.0] as expected by librosa/AI models
+                        audio_np = audio_np / 32768.0
+                        
+                        # 4. Run inference pipeline
+                        features = processor.extract_features(audio_np, is_path=False)
+                        features = features.unsqueeze(0).to(device)
+                        
+                        with torch.no_grad():
+                            risk_prediction, embeddings = model(features)
+                            probability = risk_prediction.item()
+                            disease_probs = stage2_model.predict_probs(embeddings)
+                            top_prob, top_class_idx = torch.max(disease_probs, 1)
+                            
+                            predicted_disease = stage2_model.classes[top_class_idx.item()]
+                            disease_confidence = top_prob.item()
+
+                        risk_score = round(probability * 10, 1)
+                        classification = "Normal"
+                        if risk_score >= 7:
+                            classification = "High Risk"
+                        elif risk_score >= 4:
+                            classification = "Mild Risk"
+
+                        # Gatekeeper Logic: Override disease prediction if risk is low
+                        if risk_score < 3.5:
+                            predicted_disease = "No abnormality detected"
+                            disease_confidence_str = "N/A"
+                            disclaimer = "No significant abnormal patterns detected in the respiratory audio."
+                        else:
+                            disease_confidence_str = f"{disease_confidence*100:.1f}%"
+                            disclaimer = "Probabilistic association only. Not a clinical diagnosis."
+
+                        result = {
+                            "status": "success",
+                            "filename": "Live Stream",
+                            "risk_score": risk_score,
+                            "probability": probability,
+                            "classification": classification,
+                            "disease_association": {
+                                "condition": predicted_disease,
+                                "confidence": disease_confidence_str,
+                                "disclaimer": disclaimer
+                            },
+                            "details": {
+                                "detected_anomalies": ["Abnormal Patterns"] if risk_score >= 4.0 else [],
+                                "medical_disclaimer": "This system provides probabilistic risk assessment and pattern association. It is not a diagnostic device."
+                            }
+                        }
+                        
+                        await websocket.send_json(result)
+                        print(f"Analysis sent successfully: {classification}")
+                        
+                        # Reset buffer for next potential use in same session or just wait for close
+                        audio_buffer = io.BytesIO()
+
+                    except Exception as e:
+                        print(f"Analysis error: {e}")
+                        await websocket.send_json({"error": str(e)})
+                
+                elif message["text"] == "CLEAR":
+                    audio_buffer = io.BytesIO()
+                    print("Buffer cleared.")
+
+    except WebSocketDisconnect:
+        print("WebSocket Disconnected.")
+    except Exception as e:
+        print(f"WebSocket Error: {e}")
+
 @app.post("/api/analyze")
 async def analyze_audio(file: UploadFile = File(...)):
     global model, stage2_model, processor, device
@@ -117,6 +220,15 @@ async def analyze_audio(file: UploadFile = File(...)):
         elif risk_score >= 4:
             classification = "Mild Risk"
             
+        # Gatekeeper Logic: Override disease prediction if risk is low
+        if risk_score < 3.5:
+            predicted_disease = "No abnormality detected"
+            disease_confidence_str = "N/A"
+            disclaimer = "No significant abnormal patterns detected in the respiratory audio."
+        else:
+            disease_confidence_str = f"{disease_confidence*100:.1f}%"
+            disclaimer = "Probabilistic association only. Not a clinical diagnosis."
+
         return {
             "filename": file.filename,
             "risk_score": risk_score,
@@ -124,11 +236,11 @@ async def analyze_audio(file: UploadFile = File(...)):
             "classification": classification,
             "disease_association": {
                 "condition": predicted_disease,
-                "confidence": f"{disease_confidence*100:.1f}%",
-                "disclaimer": "Probabilistic association only. Not a clinical diagnosis."
+                "confidence": disease_confidence_str,
+                "disclaimer": disclaimer
             },
             "details": {
-                "detected_anomalies": ["Abnormal Patterns"] if risk_score > 5 else [],
+                "detected_anomalies": ["Abnormal Patterns"] if risk_score >= 4.0 else [],
                 "medical_disclaimer": "This system provides probabilistic risk assessment and pattern association. It is not a diagnostic device."
             }
         }
@@ -137,3 +249,7 @@ async def analyze_audio(file: UploadFile = File(...)):
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

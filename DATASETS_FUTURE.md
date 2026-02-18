@@ -20,7 +20,7 @@ To further improve the diagnostic accuracy of Resp-AI, the following datasets ar
     *   *Access:* Research collaboration often required.
 2.  **Jordan University Respiratory Dataset**
     *   *Description:* High-quality recordings of labeled lung sounds.
-    *   *Utility:* augmenting the Asthma/COPD classes.
+    *   *Utility:* Augmenting the Asthma/COPD classes.
 3.  **COVID-19 Sounds App (Cambridge)**
     *   *Description:* Large-scale crowd-sourced respiratory sounds.
     *   *Utility:* Robustness to background noise and different microphones.
@@ -33,8 +33,18 @@ To further improve the diagnostic accuracy of Resp-AI, the following datasets ar
     *   *Description:* Clinical-grade recordings used in medical training.
     *   *Status:* Commercial.
 
-## 📝 Data Collection Protocol
-For future custom data collection, ensure:
-*   **Sampling Rate:** Minimum 4000Hz (to capture wheezes up to 2000Hz).
-*   **Format:** Uncompressed WAV (16-bit PCM).
-*   **Metadata:** Age, Sex, BMI, and **Gold Standard Diagnosis** (PFT or X-Ray confirmed).
+## 📝 Data Collection Protocol (Streaming Standard)
+For custom data collected via the Resp-AI streaming app, the following standards are enforced:
+*   **Format:** Raw PCM 16-bit Mono.
+*   **Sampling Rate:** 16,000Hz (Optimized for both human hearing and AI feature extraction).
+*   **Normalization:** Automated Z-Score normalization before storage.
+*   **Metadata Requirements:** 
+    - Age / Gender / BMI.
+    - Smoking status.
+    - Presence of fever or shortness of breath.
+    - **Gold Standard:** Verification against PFT (Spirometry) or X-Ray.
+
+---
+
+© 2026 Resp-AI Data Science Team
+Engineering Documentation
