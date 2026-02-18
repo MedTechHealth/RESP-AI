@@ -58,10 +58,21 @@ def train_stage2():
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # 3. Init Stage 2 (The Brain)
-    print("🧠 Initializing Stage 2 Model...")
+    print("🧠 Initializing Stage 2 Model with Class Weights...")
+    
+    # Calculate Class Weights based on Fraiwan Stats
+    # Stats: {0: 105, 1: 99, 2: 33, 3: 15, 4: 84}
+    counts = [105, 99, 33, 15, 84]
+    total_samples = sum(counts)
+    
+    # Weight = total / (num_classes * count)
+    weights = [total_samples / (len(counts) * c) for c in counts]
+    weights_tensor = torch.tensor(weights, dtype=torch.float32).to(device)
+    print(f"   ⚖️ Weights: {weights}")
+    
     stage2 = DiseaseClassifier().to(device)
     
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(weight=weights_tensor)
     optimizer = optim.Adam(stage2.parameters(), lr=LEARNING_RATE)
 
     # 4. Training Loop

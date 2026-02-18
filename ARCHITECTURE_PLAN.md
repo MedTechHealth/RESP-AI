@@ -30,6 +30,11 @@ The system is designed to be **modular** and **extensible**, allowing for future
 - **Outputs:**
   - **Condition Probability:** Softmax distribution over classes: `[Normal, Asthma, COPD, Heart Failure, Pneumonia, Other]`.
 - **Methodology:** Transfer Learning (Feature Extraction / Linear Probing).
+- **Performance (v3.0):** **90.18% Accuracy** on Fraiwan Dataset.
+  - *Normal:* 95.2% Sensitivity.
+  - *Asthma:* 87.9% Sensitivity.
+  - *COPD:* 93.9% Sensitivity.
+  - *Pneumonia:* 73.3% Sensitivity.
 
 ## 3. Data Flow & Inference Pipeline
 

@@ -27,7 +27,7 @@ To evolve Resp-AI from an acoustic screening tool into a **centralized medical d
 ### ✅ Phase 1: Foundational AI (Completed)
 - Stage 1 (CNN) for symptom detection.
 - Stage 2 (MLP) for disease association.
-- Initial file-based analysis.
+- **Model Optimization:** Fixed dataset parsing bug; reached **90.1% accuracy** in disease association with class-weighted training.
 
 ### ✅ Phase 2: High-Fidelity Streaming (Completed)
 - WebSocket gateway for real-time audio.

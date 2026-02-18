@@ -55,7 +55,8 @@ class FraiwanDataset(Dataset):
             parts = filename.split('_')
             if len(parts) < 2: return 4 # Fallback
             
-            disease_tag = parts[1].lower()
+            # Use only the part before the first comma
+            disease_tag = parts[1].split(',')[0].lower()
             
             # Parsing Logic
             if disease_tag == 'n':
