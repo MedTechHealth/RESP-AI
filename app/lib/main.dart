@@ -15,7 +15,9 @@ class RespAIApp extends StatelessWidget {
     return MaterialApp(
       title: 'Resp-AI Precision Instrument',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light, // Specifically set to light for this overhaul
       home: const HomeScreen(),
     );
   }

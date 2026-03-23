@@ -3,6 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'dart:math' as math;
 import '../models/analysis_result.dart';
+import '../widgets/modern_glass_card.dart';
+import '../widgets/mesh_background.dart';
+import '../theme/app_theme.dart';
 
 class ResultScreen extends StatelessWidget {
   final AnalysisResult result;
@@ -12,54 +15,36 @@ class ResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'ASSESSMENT REPORT',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            color: Colors.white70,
-          ),
-        ),
+        title: const Text('DIAGNOSTIC ANALYSIS'),
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
+          icon: const Icon(LucideIcons.chevronLeft),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF020617)],
-            stops: [0.0, 0.6, 1.0],
-          ),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 40,
-              ),
-              child: Column(
-                children: [
-                  _buildGaugeCard(context),
-                  const SizedBox(height: 24),
-                  _buildPatternAssociationCard(context),
-                  const SizedBox(height: 24),
-                  _buildSystemAnalysisCard(context),
-                  const SizedBox(height: 48),
-                  _buildMedicalDisclaimer(context),
-                  const SizedBox(height: 40),
-                ],
+      body: MeshBackground(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: Column(
+                  children: [
+                    _buildTopInfo(),
+                    const SizedBox(height: 32),
+                    _buildMainScoreCard(context),
+                    const SizedBox(height: 32),
+                    _buildBentoGrid(context),
+                    const SizedBox(height: 48),
+                    _buildDisclaimer(context),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
@@ -68,271 +53,292 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGaugeCard(BuildContext context) {
+  Widget _buildTopInfo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'SIGNAL REFERENCE: ${math.Random().nextInt(99999).toString().padLeft(5, '0')}',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.textTertiary,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Biometric Analysis Report',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppTheme.accentCyan.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.2)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                LucideIcons.lock,
+                size: 12,
+                color: AppTheme.accentCyan,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'SECURE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.accentCyan,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).animate().fadeIn().slideX(begin: -0.1);
+  }
+
+  Widget _buildMainScoreCard(BuildContext context) {
     final color = _getRiskColor(result.riskScore);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
+    return ModernGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 140),
-                child: AspectRatio(
-                  aspectRatio: 2,
-                  child: CustomPaint(
-                    painter: GaugePainter(
-                      score: result.riskScore,
-                      color: color,
+          Text(
+            'RESPIRATORY RISK LEVEL',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              letterSpacing: 2.0,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 40),
+          Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 260,
+                    height: 140,
+                    child: CustomPaint(
+                      painter: PremiumGaugePainter(
+                        score: result.riskScore,
+                        color: color,
+                      ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    bottom: 0,
+                    child: Column(
+                      children: [
+                        Text(
+                          result.riskScore.toStringAsFixed(1),
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                fontSize: 64,
+                                color: AppTheme.textPrimary,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          result.classification.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: color,
+                            letterSpacing: 3.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               )
               .animate()
-              .fadeIn(duration: 800.ms)
-              .scale(begin: const Offset(0.9, 0.9)),
-          const SizedBox(height: 12),
-          Text(
-            result.riskScore.toStringAsFixed(1),
-            style: const TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              height: 1,
-            ),
-          ),
-          Text(
-            result.classification.toUpperCase(),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: color,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Respiratory Risk Score (0-10)',
-            style: TextStyle(color: Colors.white38, fontSize: 11),
-          ),
+              .fadeIn(duration: 1000.ms)
+              .scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack),
+          const SizedBox(height: 48),
+          _buildPriorityIndicator(color),
         ],
       ),
     );
   }
 
-  Widget _buildPatternAssociationCard(BuildContext context) {
-    final condition = result.diseaseAssociation.condition.toLowerCase();
-    final isNormal =
-        condition.contains('normal') ||
-        condition.contains('no abnormality') ||
-        condition.contains('healthy');
-
-    final cardColor = isNormal
-        ? const Color(0xFF10B981)
-        : const Color(0xFF6366F1);
-
+  Widget _buildPriorityIndicator(Color color) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       decoration: BoxDecoration(
-        color: cardColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: cardColor.withValues(alpha: 0.2)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            cardColor.withValues(alpha: 0.15),
-            cardColor.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.activity, color: color, size: 18),
+          const SizedBox(width: 14),
+          Text(
+            'Inference Confidence: ${(result.probability * 100).toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms);
+  }
+
+  Widget _buildBentoGrid(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(flex: 3, child: _buildPatternCard()),
+            const SizedBox(width: 24),
+            Expanded(
+              flex: 2,
+              child: _buildMetricTile(
+                'ALGORITHM',
+                result.classification,
+                LucideIcons.cpu,
+                AppTheme.primaryIndigo,
+              ),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricTile(
+                'CONFIDENCE',
+                result.diseaseAssociation.confidence,
+                LucideIcons.barChart,
+                AppTheme.accentCyan,
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: _buildMetricTile(
+                'FILE CLASS',
+                'PCM-16',
+                LucideIcons.activity,
+                AppTheme.accentEmerald,
+              ),
+            ),
+          ],
+        ),
+        if ((result.details['detected_anomalies'] as List? ?? [])
+            .isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _buildAnomaliesCard(),
+        ],
+      ],
+    ).animate().fadeIn(delay: 600.ms).moveY(begin: 30, end: 0);
+  }
+
+  Widget _buildPatternCard() {
+    final condition = result.diseaseAssociation.condition.toLowerCase();
+    final isNormal =
+        condition.contains('normal') || condition.contains('healthy');
+    final color = isNormal ? AppTheme.accentEmerald : AppTheme.primaryIndigo;
+
+    return ModernGlassCard(
+      padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'PATTERN ASSOCIATION',
+              Icon(LucideIcons.fingerprint, size: 16, color: color),
+              const SizedBox(width: 8),
+              Text(
+                'PATTERN MATCH',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: Colors.white60,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  'Confidence: ${result.diseaseAssociation.confidence}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                  color: AppTheme.textTertiary,
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Icon(
-                isNormal ? LucideIcons.checkCircle : LucideIcons.activity,
-                size: 40,
-                color: cardColor,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  result.diseaseAssociation.condition,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            result.diseaseAssociation.condition,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: AppTheme.textPrimary,
+              height: 1.1,
+            ),
           ),
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
-          const SizedBox(height: 8),
           Text(
             result.diseaseAssociation.disclaimer,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 11,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
               fontStyle: FontStyle.italic,
+              height: 1.4,
             ),
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.1);
+    );
   }
 
-  Widget _buildSystemAnalysisCard(BuildContext context) {
-    final anomalies = result.details['detected_anomalies'] as List? ?? [];
-
-    return Container(
+  Widget _buildMetricTile(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return ModernGlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(LucideIcons.info, size: 16, color: Colors.blueAccent),
-              SizedBox(width: 8),
-              Text(
-                'SYSTEM ANALYSIS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: Colors.white60,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildMetric(
-                'PROBABILITY',
-                '${(result.probability * 100).toStringAsFixed(1)}%',
-              ),
-              const SizedBox(width: 24),
-              _buildMetric('CLASSIFICATION', result.classification),
-            ],
-          ),
-          if (anomalies.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Divider(color: Colors.white10),
-            const SizedBox(height: 16),
-            const Text(
-              'DETECTED ANOMALIES',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-                color: Colors.white38,
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: anomalies
-                  .map(
-                    (a) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Text(
-                        a.toString(),
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ],
-      ),
-    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1);
-  }
-
-  Widget _buildMetric(String label, String value) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(height: 20),
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white38,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              color: AppTheme.textTertiary,
+              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.w900,
+              color: AppTheme.textPrimary,
             ),
           ),
         ],
@@ -340,60 +346,163 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicalDisclaimer(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        result.details['medical_disclaimer'] ??
-            'Medical Disclaimer: Probabilistic screening only.',
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white24,
-          fontSize: 11,
-          height: 1.5,
-        ),
+  Widget _buildAnomaliesCard() {
+    final anomalies = result.details['detected_anomalies'] as List? ?? [];
+
+    return ModernGlassCard(
+      padding: const EdgeInsets.all(28),
+      color: AppTheme.errorRose.withOpacity(0.02),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                LucideIcons.alertTriangle,
+                size: 16,
+                color: AppTheme.errorRose,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'ACOUSTIC ANOMALIES IDENTIFIED',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.errorRose,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: anomalies
+                .map(
+                  (a) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.errorRose.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Text(
+                      a.toString().toUpperCase(),
+                      style: const TextStyle(
+                        color: AppTheme.errorRose,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
       ),
     );
   }
 
+  Widget _buildDisclaimer(BuildContext context) {
+    return Column(
+      children: [
+        const Icon(
+          LucideIcons.shieldAlert,
+          size: 28,
+          color: AppTheme.textTertiary,
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            result.details['medical_disclaimer'] ?? 'Research prototype only.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppTheme.textTertiary,
+              fontSize: 12,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    ).animate().fadeIn(delay: 1000.ms);
+  }
+
   Color _getRiskColor(double score) {
-    if (score >= 7) return const Color(0xFFEF4444); // Red 500
-    if (score >= 4) return const Color(0xFFF59E0B); // Amber 500
-    return const Color(0xFF10B981); // Emerald 500
+    if (score >= 7) return AppTheme.errorRose;
+    if (score >= 4) return AppTheme.warningAmber;
+    return AppTheme.accentEmerald;
   }
 }
 
-class GaugePainter extends CustomPainter {
+class PremiumGaugePainter extends CustomPainter {
   final double score;
   final Color color;
 
-  GaugePainter({required this.score, required this.color});
+  PremiumGaugePainter({required this.score, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
-    // The gauge is a semi-circle, so height should be width/2.
-    // We adjust the radius to fit within the available size.
     final radius = math.min(size.width / 2, size.height);
     final center = Offset(size.width / 2, size.height);
 
-    final backgroundPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
+    final trackPaint = Paint()
+      ..color = AppTheme.borderMedium.withOpacity(0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 16
+      ..strokeWidth = 18
       ..strokeCap = StrokeCap.round;
 
     final progressPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 16
+      ..strokeWidth = 18
       ..strokeCap = StrokeCap.round;
 
-    final rect = Rect.fromCircle(center: center, radius: radius - 8);
+    final shadowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 24
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
 
-    // Draw background arc
-    canvas.drawArc(rect, math.pi, math.pi, false, backgroundPaint);
+    final rect = Rect.fromCircle(center: center, radius: radius - 15);
 
-    // Draw progress arc
+    canvas.drawArc(rect, math.pi, math.pi, false, trackPaint);
+
+    final tickPaint = Paint()
+      ..color = AppTheme.textTertiary.withOpacity(0.3)
+      ..strokeWidth = 2;
+    for (int i = 0; i <= 10; i++) {
+      double angle = math.pi + (i / 10) * math.pi;
+      Offset p1 =
+          center +
+          Offset(
+            math.cos(angle) * (radius - 30),
+            math.sin(angle) * (radius - 30),
+          );
+      Offset p2 =
+          center +
+          Offset(
+            math.cos(angle) * (radius - 40),
+            math.sin(angle) * (radius - 40),
+          );
+      canvas.drawLine(p1, p2, tickPaint);
+    }
+
+    canvas.drawArc(
+      rect,
+      math.pi,
+      math.pi * (math.min(score, 10.0) / 10),
+      false,
+      shadowPaint,
+    );
     canvas.drawArc(
       rect,
       math.pi,
