@@ -15,9 +15,9 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: RespAIApp()));
     await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('Clinical Respiratory intake'), findsOneWidget);
-    expect(find.text('Begin live capture'), findsOneWidget);
-    expect(find.text('Import'), findsOneWidget);
+    expect(find.text('Respiratory Capture'), findsOneWidget);
+    expect(find.text('START CAPTURE'), findsOneWidget);
+    expect(find.text('IMPORT'), findsOneWidget);
   });
 
   testWidgets('result screen exposes the new risk overview narrative', (
@@ -45,8 +45,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ResultScreen(result: result)));
     await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('Risk Evaluation Narrative'), findsOneWidget);
-    expect(find.text('CONFIDENCE SIGNAL'), findsOneWidget);
+    expect(find.text('Clinical Risk Narrative'), findsOneWidget);
+    expect(find.text('CLASSIFICATION CONFIDENCE'), findsOneWidget);
     expect(find.text('Prototype support only.'), findsOneWidget);
   });
 }

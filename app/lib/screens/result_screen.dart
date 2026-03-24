@@ -29,6 +29,7 @@ class ResultScreen extends StatelessWidget {
         ),
         leading: IconButton(
           icon: const Icon(LucideIcons.chevronLeft, size: 18),
+          tooltip: 'Back to Dashboard',
           onPressed: () => Navigator.pop(context),
         ),
       ),
