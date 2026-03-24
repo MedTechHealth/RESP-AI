@@ -1,9 +1,13 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class MeshBackground extends StatefulWidget {
-  final Widget child;
   const MeshBackground({super.key, required this.child});
+
+  final Widget child;
 
   @override
   State<MeshBackground> createState() => _MeshBackgroundState();
@@ -11,14 +15,14 @@ class MeshBackground extends StatefulWidget {
 
 class _MeshBackgroundState extends State<MeshBackground>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 18),
     )..repeat();
   }
 
@@ -31,13 +35,31 @@ class _MeshBackgroundState extends State<MeshBackground>
   @override
   Widget build(BuildContext context) {
     return Stack(
-      children: [
+      children: <Widget>[
         Positioned.fill(
           child: AnimatedBuilder(
             animation: _controller,
-            builder: (context, child) {
-              return CustomPaint(painter: MeshPainter(_controller.value));
+            builder: (BuildContext context, Widget? child) {
+              return CustomPaint(
+                painter: _EditorialBackgroundPainter(
+                  progress: _controller.value,
+                ),
+              );
             },
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  AppTheme.frost.withValues(alpha: 0.88),
+                  AppTheme.frost.withValues(alpha: 0.92),
+                ],
+              ),
+            ),
           ),
         ),
         widget.child,
@@ -46,62 +68,93 @@ class _MeshBackgroundState extends State<MeshBackground>
   }
 }
 
-class MeshPainter extends CustomPainter {
-  final double animationValue;
-  MeshPainter(this.animationValue);
+class _EditorialBackgroundPainter extends CustomPainter {
+  const _EditorialBackgroundPainter({required this.progress});
+
+  final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 100);
+    final Rect rect = Offset.zero & size;
+    final Paint fill = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.55, -0.65),
+        radius: 1.15,
+        colors: <Color>[
+          AppTheme.goldSoft.withValues(alpha: 0.65),
+          AppTheme.frost.withValues(alpha: 0.1),
+          Colors.transparent,
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, fill);
 
-    // Color 1: Indigo
-    _drawBlob(
-      canvas,
-      size,
-      paint..color = const Color(0xFF4F46E5).withOpacity(0.08),
-      offset: Offset(
-        size.width * 0.2 + math.sin(animationValue * math.pi * 2) * 50,
-        size.height * 0.2 + math.cos(animationValue * math.pi * 2) * 50,
-      ),
-      radius: size.width * 0.6,
+    final Paint secondary = Paint()
+      ..shader = RadialGradient(
+        center: Alignment(
+          0.75,
+          -0.25 + math.sin(progress * math.pi * 2) * 0.06,
+        ),
+        radius: 0.95,
+        colors: <Color>[
+          AppTheme.respiratoryTealSoft.withValues(alpha: 0.55),
+          Colors.transparent,
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, secondary);
+
+    final Paint contourPaint = Paint()
+      ..color = AppTheme.glassBorder.withValues(alpha: 0.28)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final Offset center = Offset(size.width * 0.78, size.height * 0.22);
+    for (int index = 0; index < 7; index++) {
+      final double radius = size.shortestSide * (0.24 + index * 0.085);
+      canvas.drawOval(
+        Rect.fromCenter(center: center, width: radius * 1.8, height: radius),
+        contourPaint,
+      );
+    }
+
+    final Paint wavePaint = Paint()
+      ..color = AppTheme.slate.withValues(alpha: 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    for (int line = 0; line < 4; line++) {
+      final Path path = Path();
+      final double startY = size.height * (0.66 + line * 0.05);
+      path.moveTo(-40, startY);
+      for (double x = -40; x <= size.width + 40; x += 8) {
+        final double y =
+            startY +
+            math.sin(
+                  (x / size.width) * math.pi * 3 +
+                      progress * math.pi * 2 +
+                      line,
+                ) *
+                (8 + line * 2);
+        path.lineTo(x, y);
+      }
+      canvas.drawPath(path, wavePaint);
+    }
+
+    final Paint markerPaint = Paint()
+      ..color = AppTheme.slate.withValues(alpha: 0.09);
+    canvas.drawCircle(
+      Offset(size.width * 0.18, size.height * 0.17),
+      72,
+      markerPaint,
     );
-
-    // Color 2: Cyan
-    _drawBlob(
-      canvas,
-      size,
-      paint..color = const Color(0xFF06B6D4).withOpacity(0.08),
-      offset: Offset(
-        size.width * 0.8 + math.cos(animationValue * math.pi * 2) * 80,
-        size.height * 0.1 + math.sin(animationValue * math.pi * 2) * 80,
-      ),
-      radius: size.width * 0.5,
+    canvas.drawCircle(
+      Offset(size.width * 0.2, size.height * 0.18),
+      58,
+      Paint()..color = AppTheme.frost.withValues(alpha: 0.9),
     );
-
-    // Color 3: Rose/Pink
-    _drawBlob(
-      canvas,
-      size,
-      paint..color = const Color(0xFFE11D48).withOpacity(0.05),
-      offset: Offset(
-        size.width * 0.5 + math.sin(animationValue * math.pi * 2 + 1) * 100,
-        size.height * 0.8 + math.cos(animationValue * math.pi * 2 + 1) * 100,
-      ),
-      radius: size.width * 0.7,
-    );
-  }
-
-  void _drawBlob(
-    Canvas canvas,
-    Size size,
-    Paint paint, {
-    required Offset offset,
-    required double radius,
-  }) {
-    canvas.drawCircle(offset, radius, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _EditorialBackgroundPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
