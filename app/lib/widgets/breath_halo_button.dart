@@ -1,6 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_theme.dart';
 import 'reactive_liquid_ripple.dart';
@@ -27,91 +28,118 @@ class BreathHaloButton extends StatelessWidget {
         ? AppTheme.oxide
         : AppTheme.respiratoryTeal;
     final String label = isAnalyzing
-        ? 'Analysis in progress'
+        ? 'ANALYZING'
         : isRecording
-        ? 'Stop capture'
-        : 'Begin live capture';
+        ? 'STOP CAPTURE'
+        : 'START CAPTURE';
     final IconData icon = isAnalyzing
-        ? Icons.hourglass_top_rounded
+        ? LucideIcons.loader2
         : isRecording
-        ? Icons.stop_rounded
-        : Icons.mic_rounded;
+        ? LucideIcons.square
+        : LucideIcons.mic;
 
     return Semantics(
       button: true,
       label: label,
       child: SizedBox(
-        width: 260,
-        height: 260,
+        width: 300,
+        height: 300,
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
             IgnorePointer(
-              child: ReactiveLiquidRipple(
-                size: 260,
-                color: accent,
-                amplitude: isRecording ? amplitude : 0.2,
-                isAnimating: isRecording || isAnalyzing,
+              child: RepaintBoundary(
+                child: ReactiveLiquidRipple(
+                  size: 300,
+                  color: accent,
+                  amplitude: isRecording ? amplitude : 0.15,
+                  isAnimating: isRecording || isAnalyzing,
+                ),
               ),
             ),
-            Container(
-              width: 188,
-              height: 188,
+            // Morphing Background
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutQuart,
+              width: isRecording ? 200 : 180,
+              height: isRecording ? 200 : 180,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: <Color>[
-                    AppTheme.glass,
-                    accent.withValues(alpha: 0.18),
-                  ],
-                ),
+                color: AppTheme.glass,
+                borderRadius: BorderRadius.circular(isRecording ? 48 : 100),
                 border: Border.all(
-                  color: accent.withValues(alpha: 0.35),
-                  width: 1.5,
+                  color: accent.withValues(alpha: 0.25),
+                  width: 1,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: accent.withValues(alpha: 0.12),
-                    blurRadius: 28,
+                    blurRadius: 32,
                     offset: const Offset(0, 16),
                   ),
                 ],
               ),
             ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(156, 156),
-                maximumSize: const Size(156, 156),
-                backgroundColor: isAnalyzing
-                    ? AppTheme.frostDeep
-                    : AppTheme.slate,
-                foregroundColor: isAnalyzing
-                    ? AppTheme.slateMuted
-                    : AppTheme.glass,
-                shape: const CircleBorder(),
-              ),
-              onPressed: isAnalyzing ? null : onPressed,
-              icon: Icon(icon, size: 28),
-              label: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: isAnalyzing ? AppTheme.slateMuted : AppTheme.glass,
-                      fontSize: 14,
-                    ),
+            // Morphing Primary Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: isAnalyzing ? null : onPressed,
+                borderRadius: BorderRadius.circular(isRecording ? 48 : 100),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOutQuart,
+                  width: isRecording ? 160 : 160,
+                  height: isRecording ? 160 : 160,
+                  decoration: BoxDecoration(
+                    color: isAnalyzing ? AppTheme.frostDeep : AppTheme.slate,
+                    borderRadius: BorderRadius.circular(isRecording ? 40 : 80),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    durationLabel,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: isAnalyzing ? AppTheme.slateMuted : AppTheme.glass,
-                      fontFeatures: AppTheme.tabularFigures,
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                            icon,
+                            size: 32,
+                            color: isAnalyzing
+                                ? AppTheme.slateMuted
+                                : AppTheme.glass,
+                          )
+                          .animate(
+                            onPlay: (controller) {
+                              if (isAnalyzing) {
+                                controller.repeat();
+                              }
+                            },
+                          )
+                          .rotate(duration: 1.seconds),
+                      const SizedBox(height: 12),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: isAnalyzing
+                              ? AppTheme.slateMuted
+                              : AppTheme.glass,
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        durationLabel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: isAnalyzing
+                              ? AppTheme.slateMuted
+                              : AppTheme.glass,
+                          fontFeatures: AppTheme.tabularFigures,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],
