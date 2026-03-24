@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'reactive_liquid_ripple.dart';
 
 class BreathHaloButton extends StatelessWidget {
   const BreathHaloButton({
@@ -11,12 +12,14 @@ class BreathHaloButton extends StatelessWidget {
     required this.isAnalyzing,
     required this.durationLabel,
     required this.onPressed,
+    this.amplitude = 1.0,
   });
 
   final bool isRecording;
   final bool isAnalyzing;
   final String durationLabel;
   final VoidCallback? onPressed;
+  final double amplitude;
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +47,11 @@ class BreathHaloButton extends StatelessWidget {
           alignment: Alignment.center,
           children: <Widget>[
             IgnorePointer(
-              child: CustomPaint(
-                size: const Size.square(260),
-                painter: _HaloPainter(
-                  accent: accent,
-                  isRecording: isRecording,
-                  isAnalyzing: isAnalyzing,
-                ),
+              child: ReactiveLiquidRipple(
+                size: 260,
+                color: accent,
+                amplitude: isRecording ? amplitude : 0.2,
+                isAnimating: isRecording || isAnalyzing,
               ),
             ),
             Container(
@@ -117,63 +118,5 @@ class BreathHaloButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _HaloPainter extends CustomPainter {
-  const _HaloPainter({
-    required this.accent,
-    required this.isRecording,
-    required this.isAnalyzing,
-  });
-
-  final Color accent;
-  final bool isRecording;
-  final bool isAnalyzing;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset center = size.center(Offset.zero);
-    final Paint outer = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = AppTheme.glassBorder;
-
-    for (int index = 0; index < 4; index++) {
-      canvas.drawCircle(center, 104 + index * 12, outer);
-    }
-
-    final Paint accentPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.round
-      ..color = accent.withValues(alpha: isAnalyzing ? 0.28 : 0.88);
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: 102),
-      -math.pi * 0.8,
-      isRecording ? math.pi * 1.4 : math.pi * 0.86,
-      false,
-      accentPaint,
-    );
-
-    final Paint dashed = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = accent.withValues(alpha: 0.35);
-
-    for (int tick = 0; tick < 18; tick++) {
-      final double angle = (math.pi * 2 / 18) * tick;
-      final Offset p1 = center + Offset(math.cos(angle), math.sin(angle)) * 118;
-      final Offset p2 = center + Offset(math.cos(angle), math.sin(angle)) * 126;
-      canvas.drawLine(p1, p2, dashed);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _HaloPainter oldDelegate) {
-    return oldDelegate.accent != accent ||
-        oldDelegate.isRecording != isRecording ||
-        oldDelegate.isAnalyzing != isAnalyzing;
   }
 }

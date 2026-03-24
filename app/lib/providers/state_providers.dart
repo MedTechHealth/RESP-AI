@@ -6,6 +6,7 @@ class RecordingState {
   final String? statusMessage;
   final String? recordedFilePath;
   final int recordingDuration;
+  final double amplitude;
 
   RecordingState({
     this.isRecording = false,
@@ -13,6 +14,7 @@ class RecordingState {
     this.statusMessage,
     this.recordedFilePath,
     this.recordingDuration = 0,
+    this.amplitude = 0.1,
   });
 
   RecordingState copyWith({
@@ -21,6 +23,7 @@ class RecordingState {
     String? statusMessage,
     String? recordedFilePath,
     int? recordingDuration,
+    double? amplitude,
   }) {
     return RecordingState(
       isRecording: isRecording ?? this.isRecording,
@@ -28,6 +31,7 @@ class RecordingState {
       statusMessage: statusMessage ?? this.statusMessage,
       recordedFilePath: recordedFilePath ?? this.recordedFilePath,
       recordingDuration: recordingDuration ?? this.recordingDuration,
+      amplitude: amplitude ?? this.amplitude,
     );
   }
 }
@@ -54,6 +58,10 @@ class RecordingNotifier extends Notifier<RecordingState> {
 
   void setDuration(int duration) {
     state = state.copyWith(recordingDuration: duration);
+  }
+
+  void setAmplitude(double amplitude) {
+    state = state.copyWith(amplitude: amplitude);
   }
 
   void reset() {

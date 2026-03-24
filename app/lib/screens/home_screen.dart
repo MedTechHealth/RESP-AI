@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:record/record.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/analysis_result.dart';
@@ -32,12 +33,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   WebSocketChannel? _wsChannel;
   StreamSubscription<dynamic>? _wsSubscription;
   StreamSubscription<List<int>>? _audioSubscription;
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
 
   @override
   void dispose() {
     _timer?.cancel();
     _wsSubscription?.cancel();
     _audioSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
     _wsChannel?.sink.close();
     super.dispose();
   }
@@ -91,6 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       notifier.setStatus('Finalizing live respiratory stream...');
       _wsChannel?.sink.add('FINISH');
       await _audioSubscription?.cancel();
+      await _amplitudeSubscription?.cancel();
       await audioService.stopRecording();
       return;
     }
@@ -139,6 +143,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final Stream<List<int>> audioStream = await audioService.startStreaming();
       _audioSubscription = audioStream.listen((List<int> chunk) {
         _wsChannel?.sink.add(chunk);
+      });
+
+      _amplitudeSubscription = audioService.onAmplitudeChanged().listen((amp) {
+        // amp.current is in dB, from -160 to 0.
+        // We want to map it to a 0.0 to 1.0 range for the ripple distortion.
+        // -160 dB is effectively silence, -30 dB is quite loud.
+        double normalized = (amp.current + 160) / 160;
+        // Increase sensitivity for clinical breath sounds
+        normalized = (normalized * 2.0).clamp(0.0, 1.2);
+        notifier.setAmplitude(normalized);
       });
 
       notifier.setRecording(true);
@@ -395,6 +409,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: BreathHaloButton(
               isRecording: state.isRecording,
               isAnalyzing: state.isAnalyzing,
+              amplitude: state.amplitude,
               durationLabel: _formatDuration(state.recordingDuration),
               onPressed: _toggleRecording,
             ),

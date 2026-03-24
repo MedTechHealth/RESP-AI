@@ -27,12 +27,12 @@
 - Create: `/home/joel/Resp-AI/app/lib/widgets/reactive_liquid_ripple.dart`
 - Modify: `/home/joel/Resp-AI/app/lib/widgets/breath_halo_button.dart` (to incorporate ripple)
 
-- [ ] **Step 1: Implement ReactiveLiquidRipple CustomPainter with sine-wave layers.**
-- [ ] **Step 2: Add amplitude sensitivity logic to the ripple distortion.**
-- [ ] **Step 3: Wrap the painter in RepaintBoundary for performance.**
-- [ ] **Step 4: Replace the existing halo in BreathHaloButton with the new ripple.**
-- [ ] **Step 5: Verify smooth 60fps animation during recording state.**
-- [ ] **Step 6: Commit core viz changes.**
+- [x] **Step 1: Implement ReactiveLiquidRipple CustomPainter with sine-wave layers.**
+- [x] **Step 2: Add amplitude sensitivity logic to the ripple distortion.**
+- [x] **Step 3: Wrap the painter in RepaintBoundary for performance.**
+- [x] **Step 4: Replace the existing halo in BreathHaloButton with the new ripple.**
+- [x] **Step 5: Verify smooth 60fps animation during recording state.**
+- [x] **Step 6: Commit core viz changes.**
 
 ### Task 3: Layout - HomeScreen "Instrument Dashboard" Stage
 
