@@ -87,27 +87,55 @@ class ResultScreen extends StatelessWidget {
 
   Widget _buildNarrativeHeader(BuildContext context) {
     return ModernGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildEyebrow(
-            context,
-            'Respiratory Profile · ID: ${result.filename.split('/').last}',
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              _buildEyebrow(
+                context,
+                'Respiratory Profile · ID: ${result.filename.split('/').last}',
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.slate.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'CONFIDENTIAL',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 9,
+                    letterSpacing: 2.0,
+                    color: AppTheme.slate.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
-            'Risk Evaluation Narrative',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineLarge?.copyWith(fontSize: 26),
+            'Clinical Risk Narrative',
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 800),
             child: Text(
               _summarySentence(),
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                height: 1.7,
+                color: AppTheme.slateSoft,
+              ),
             ),
           ),
         ],
@@ -162,14 +190,14 @@ class ResultScreen extends StatelessWidget {
     final Color riskColor = _riskColor(result.riskScore);
 
     return ModernGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool stacked = constraints.maxWidth < 720;
           final Widget dial = RepaintBoundary(
             child: SizedBox(
-              width: 260,
-              height: 200,
+              width: 280,
+              height: 220,
               child: CustomPaint(
                 painter: _RiskDialPainter(
                   score: result.riskScore,
@@ -177,7 +205,7 @@ class ResultScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 36),
+                    padding: const EdgeInsets.only(top: 32),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
@@ -185,16 +213,21 @@ class ResultScreen extends StatelessWidget {
                           result.riskScore.toStringAsFixed(1),
                           style: Theme.of(context).textTheme.displayLarge
                               ?.copyWith(
-                                fontSize: 60,
+                                fontSize: 68,
+                                fontWeight: FontWeight.w800,
                                 height: 1.0,
                                 fontFeatures: AppTheme.tabularFigures,
                               ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           result.classification.toUpperCase(),
                           style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: riskColor, letterSpacing: 0.8),
+                              ?.copyWith(
+                                color: riskColor,
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.w900,
+                              ),
                         ),
                       ],
                     ),
@@ -208,20 +241,25 @@ class ResultScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              _buildEyebrow(context, 'Risk Signal'),
-              const SizedBox(height: 12),
+              _buildEyebrow(context, 'Instrument Signal'),
+              const SizedBox(height: 16),
               Text(
                 _riskHeadline(),
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineMedium?.copyWith(fontSize: 18),
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontSize: 22,
+                  letterSpacing: -0.4,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
-                'Scored on a clinical pattern match of respiratory acoustics.',
-                style: Theme.of(context).textTheme.bodySmall,
+                'Pattern matching score derived from spectral analysis of audio telemetry.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: 14,
+                  color: AppTheme.slateSoft,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -229,9 +267,16 @@ class ResultScreen extends StatelessWidget {
                   _metricChip(
                     context,
                     icon: LucideIcons.activity,
-                    label: 'Band',
+                    label: 'Clinical Band',
                     value: _riskBand(),
                     accent: riskColor,
+                  ),
+                  _metricChip(
+                    context,
+                    icon: LucideIcons.target,
+                    label: 'Precision',
+                    value: '${(result.probability * 100).toStringAsFixed(1)}%',
+                    accent: AppTheme.slateSoft,
                   ),
                 ],
               ),
@@ -247,7 +292,7 @@ class ResultScreen extends StatelessWidget {
           return Row(
             children: <Widget>[
               dial,
-              const SizedBox(width: 24),
+              const SizedBox(width: 32),
               Expanded(child: narrative),
             ],
           );
@@ -260,62 +305,43 @@ class ResultScreen extends StatelessWidget {
     final List<dynamic> anomalies =
         (result.details['detected_anomalies'] as List<dynamic>?) ?? <dynamic>[];
 
-    return Column(
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              flex: 3,
-              child: _evidenceCard(
-                context,
-                title: 'Pattern Match',
-                value: result.diseaseAssociation.condition,
-                body: result.diseaseAssociation.disclaimer,
-                icon: LucideIcons.fingerprint,
-                accent: AppTheme.respiratoryTeal,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: _evidenceCard(
-                context,
-                title: 'Classification',
-                value: result.classification,
-                body: 'Model output label.',
-                icon: LucideIcons.cpu,
-                accent: AppTheme.gold,
-              ),
-            ),
-          ],
+        _evidenceCard(
+          context,
+          title: 'Pattern Match',
+          value: result.diseaseAssociation.condition,
+          body: result.diseaseAssociation.disclaimer,
+          icon: LucideIcons.fingerprint,
+          accent: AppTheme.respiratoryTeal,
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _evidenceCard(
-                context,
-                title: 'Reference',
-                value: result.filename.split('/').last,
-                body: 'Analyzed recording.',
-                icon: LucideIcons.fileAudio,
-                accent: AppTheme.success,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _evidenceCard(
-                context,
-                title: 'Anomalies',
-                value: anomalies.isEmpty ? 'None' : anomalies.join(', '),
-                body: anomalies.isEmpty
-                    ? 'No explicit anomalies.'
-                    : 'Reported markers.',
-                icon: LucideIcons.alertTriangle,
-                accent: AppTheme.oxide,
-              ),
-            ),
-          ],
+        _evidenceCard(
+          context,
+          title: 'Classification',
+          value: result.classification,
+          body: 'Model output label.',
+          icon: LucideIcons.cpu,
+          accent: AppTheme.gold,
+        ),
+        _evidenceCard(
+          context,
+          title: 'Reference',
+          value: result.filename.split('/').last,
+          body: 'Analyzed recording.',
+          icon: LucideIcons.fileAudio,
+          accent: AppTheme.success,
+        ),
+        _evidenceCard(
+          context,
+          title: 'Anomalies',
+          value: anomalies.isEmpty ? 'None' : anomalies.join(', '),
+          body: anomalies.isEmpty
+              ? 'No explicit anomalies.'
+              : 'Reported markers.',
+          icon: LucideIcons.alertTriangle,
+          accent: AppTheme.oxide,
         ),
       ],
     );
@@ -330,22 +356,23 @@ class ResultScreen extends StatelessWidget {
         : AppTheme.oxide;
 
     return ModernGlassCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       tint: accent.withValues(alpha: 0.05),
       borderColor: accent.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildEyebrow(context, 'Confidence Signal'),
-          const SizedBox(height: 10),
+          _buildEyebrow(context, 'Classification Confidence'),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
               Text(
                 confidencePercent.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontSize: 34,
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
                   color: AppTheme.slate,
                   fontFeatures: AppTheme.tabularFigures,
                 ),
@@ -353,23 +380,25 @@ class ResultScreen extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 '%',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppTheme.slateMuted),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppTheme.slateMuted,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Association Confidence: ${result.diseaseAssociation.confidence}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.slateSoft,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           LinearProgressIndicator(
             value: result.probability.clamp(0, 1),
-            minHeight: 6,
+            minHeight: 8,
             borderRadius: BorderRadius.circular(999),
             backgroundColor: AppTheme.frostDeep.withValues(alpha: 0.5),
             color: accent,
@@ -381,30 +410,30 @@ class ResultScreen extends StatelessWidget {
 
   Widget _buildRecommendationPanel(BuildContext context) {
     return ModernGlassCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildEyebrow(context, 'Interpretation'),
-          const SizedBox(height: 12),
+          _buildEyebrow(context, 'Clinical Context'),
+          const SizedBox(height: 16),
           _noteRow(
             context,
             icon: LucideIcons.stethoscope,
-            text: 'Triage support only, not clinical diagnosis.',
+            text: 'Decision support tool only. Not a clinical diagnosis.',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _noteRow(
             context,
             icon: LucideIcons.shieldAlert,
             text:
                 (result.details['medical_disclaimer'] as String?) ??
-                'Research prototype. Consult clinician.',
+                'Research prototype. Professional consultation required.',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           _noteRow(
             context,
             icon: LucideIcons.rotateCcw,
-            text: 'Verify with fresh sample if noise detected.',
+            text: 'Repeat analysis if significant ambient noise was present.',
           ),
         ],
       ),
@@ -456,37 +485,50 @@ class ResultScreen extends StatelessWidget {
     required IconData icon,
     required Color accent,
   }) {
-    return ModernGlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
+      child: ModernGlassCard(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 12, color: accent),
+                ),
+                const SizedBox(width: 8),
+                Text(title, style: Theme.of(context).textTheme.labelSmall),
+              ],
             ),
-            child: Icon(icon, size: 14, color: accent),
-          ),
-          const SizedBox(height: 10),
-          Text(title, style: Theme.of(context).textTheme.labelSmall),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            body,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
+            const SizedBox(height: 14),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 15,
+                fontFeatures: AppTheme.tabularFigures,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              body,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                color: AppTheme.slateMuted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -566,46 +608,94 @@ class _RiskDialPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Offset center = Offset(size.width / 2, size.height * 0.92);
-    final double radius = math.min(size.width * 0.38, size.height * 0.76);
+    final Offset center = Offset(size.width / 2, size.height * 0.9);
+    final double radius = math.min(size.width * 0.4, size.height * 0.78);
 
+    // Main Track
     final Paint track = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
+      ..strokeWidth = 2
+      ..color = AppTheme.frostDeep;
+
+    final Paint trackInner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 20
       ..strokeCap = StrokeCap.round
-      ..color = AppTheme.frostDeep.withValues(alpha: 0.5);
+      ..color = AppTheme.frostDeep.withValues(alpha: 0.3);
+
+    final Rect rect = Rect.fromCircle(center: center, radius: radius);
+    final Rect rectInner = Rect.fromCircle(center: center, radius: radius - 20);
+
+    canvas.drawArc(rect, math.pi, math.pi, false, track);
+    canvas.drawArc(rectInner, math.pi, math.pi, false, trackInner);
+
+    // Progress
+    final double sweep = math.pi * (score.clamp(0, 10) / 10);
 
     final Paint progress = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
+      ..strokeWidth = 20
       ..strokeCap = StrokeCap.round
       ..color = color;
 
     final Paint glow = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 20
+      ..strokeWidth = 24
       ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: 0.12)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..color = color.withValues(alpha: 0.15)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
-    final Rect rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(rect, math.pi, math.pi, false, track);
+    canvas.drawArc(rectInner, math.pi, sweep, false, glow);
+    canvas.drawArc(rectInner, math.pi, sweep, false, progress);
 
-    final double sweep = math.pi * (score.clamp(0, 10) / 10);
-    canvas.drawArc(rect, math.pi, sweep, false, glow);
-    canvas.drawArc(rect, math.pi, sweep, false, progress);
+    // Precision Ticks
+    final Paint majorTick = Paint()
+      ..color = AppTheme.slate.withValues(alpha: 0.4)
+      ..strokeWidth = 1.2;
+    final Paint minorTick = Paint()
+      ..color = AppTheme.slate.withValues(alpha: 0.15)
+      ..strokeWidth = 0.8;
 
-    final Paint tick = Paint()
-      ..color = AppTheme.slateMuted.withValues(alpha: 0.2)
-      ..strokeWidth = 1.0;
-    for (int index = 0; index <= 10; index++) {
-      final double angle = math.pi + (math.pi / 10) * index;
+    for (int index = 0; index <= 40; index++) {
+      final double angle = math.pi + (math.pi / 40) * index;
+      final bool isMajor = index % 4 == 0;
+      final double length = isMajor ? 12.0 : 6.0;
+
       final Offset outer =
-          center + Offset(math.cos(angle), math.sin(angle)) * (radius + 6);
+          center + Offset(math.cos(angle), math.sin(angle)) * (radius + 2);
       final Offset inner =
-          center + Offset(math.cos(angle), math.sin(angle)) * (radius - 8);
-      canvas.drawLine(outer, inner, tick);
+          center +
+          Offset(math.cos(angle), math.sin(angle)) * (radius + 2 + length);
+
+      canvas.drawLine(outer, inner, isMajor ? majorTick : minorTick);
     }
+
+    // Needle
+    final Paint needlePaint = Paint()
+      ..color = AppTheme.slate
+      ..style = PaintingStyle.fill;
+
+    final double needleAngle = math.pi + sweep;
+    final Path needlePath = Path();
+
+    final Offset needleBase1 =
+        center +
+        Offset(math.cos(needleAngle + 0.1), math.sin(needleAngle + 0.1)) * 12;
+    final Offset needleBase2 =
+        center +
+        Offset(math.cos(needleAngle - 0.1), math.sin(needleAngle - 0.1)) * 12;
+    final Offset needleTip =
+        center +
+        Offset(math.cos(needleAngle), math.sin(needleAngle)) * (radius - 36);
+
+    needlePath.moveTo(needleBase1.dx, needleBase1.dy);
+    needlePath.lineTo(needleBase2.dx, needleBase2.dy);
+    needlePath.lineTo(needleTip.dx, needleTip.dy);
+    needlePath.close();
+
+    canvas.drawPath(needlePath, needlePaint);
+    canvas.drawCircle(center, 5, needlePaint);
+    canvas.drawCircle(center, 2, Paint()..color = Colors.white);
   }
 
   @override
