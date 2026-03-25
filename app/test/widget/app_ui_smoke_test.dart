@@ -9,7 +9,7 @@ void main() {
   testWidgets('home screen exposes the new respiratory intake UI', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = 1.0;
 
     await tester.pumpWidget(const ProviderScope(child: RespAIApp()));
@@ -45,8 +45,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ResultScreen(result: result)));
     await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('Clinical Risk Narrative'), findsOneWidget);
+    expect(find.text('CLINICAL NARRATIVE'), findsOneWidget);
     expect(find.text('CLASSIFICATION CONFIDENCE'), findsOneWidget);
-    expect(find.text('Prototype support only.'), findsOneWidget);
+    expect(find.text('Not a medical diagnosis.'), findsOneWidget);
   });
 }

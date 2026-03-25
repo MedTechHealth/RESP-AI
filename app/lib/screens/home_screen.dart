@@ -15,7 +15,6 @@ import '../services/api_service.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/breath_halo_button.dart';
-import '../widgets/holographic_lung.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/modern_glass_card.dart';
 import 'result_screen.dart';

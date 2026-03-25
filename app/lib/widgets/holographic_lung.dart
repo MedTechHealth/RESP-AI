@@ -24,6 +24,9 @@ class HolographicLung extends StatefulWidget {
 class _HolographicLungState extends State<HolographicLung>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Path? _cachedRightLung;
+  Path? _cachedLeftLung;
+  double _lastScale = 0;
 
   @override
   void initState() {
@@ -34,77 +37,12 @@ class _HolographicLungState extends State<HolographicLung>
     )..repeat();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: CustomPaint(
-        size: Size(widget.size, widget.size),
-        painter: LungPainter(
-          animationValue: _controller.value,
-          isRecording: widget.isRecording,
-          confidence: widget.confidence,
-          disease: widget.disease,
-        ),
-      ),
-    );
-  }
-}
-
-class LungPainter extends CustomPainter {
-  LungPainter({
-    required this.animationValue,
-    required this.isRecording,
-    required this.confidence,
-    this.disease,
-  });
-
-  final double animationValue;
-  final bool isRecording;
-  final double confidence;
-  final String? disease;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.45);
-    final scale = math.min(size.width, size.height) * 0.45;
-
-    _drawLobes(canvas, center, scale);
-    _drawBronchialTree(canvas, center, scale);
-    if (isRecording) {
-      _drawParticles(canvas, center, scale);
-    }
-    if (disease != null) {
-      _drawDiseaseOverlay(canvas, center, scale);
-    }
-  }
-
-  void _drawLobes(Canvas canvas, Offset center, double scale) {
-    final baseColor = AppTheme.mentholCyan;
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = baseColor.withValues(alpha: 0.4);
-
-    final fillPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = ui.Gradient.radial(center, scale * 1.5, [
-        baseColor.withValues(alpha: 0.1),
-        baseColor.withValues(alpha: 0.0),
-      ]);
-
-    if (confidence < 0.8) {
-      final blur = (1.0 - confidence) * 8.0;
-      strokePaint.maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
-    }
+  void _updatePaths(Offset center, double scale) {
+    if (_lastScale == scale && _cachedRightLung != null) return;
+    _lastScale = scale;
 
     // Right Lung (3 lobes: Superior, Middle, Inferior)
-    final rightLungPath = Path()
+    _cachedRightLung = Path()
       ..moveTo(center.dx + scale * 0.1, center.dy - scale * 0.8)
       ..quadraticBezierTo(
         center.dx + scale * 0.7,
@@ -128,7 +66,7 @@ class LungPainter extends CustomPainter {
       ..close();
 
     // Left Lung (2 lobes: Superior, Inferior - with cardiac notch)
-    final leftLungPath = Path()
+    _cachedLeftLung = Path()
       ..moveTo(center.dx - scale * 0.1, center.dy - scale * 0.8)
       ..quadraticBezierTo(
         center.dx - scale * 0.7,
@@ -156,11 +94,101 @@ class LungPainter extends CustomPainter {
       )
       ..lineTo(center.dx - scale * 0.1, center.dy - scale * 0.8)
       ..close();
+  }
 
-    canvas.drawPath(rightLungPath, fillPaint);
-    canvas.drawPath(leftLungPath, fillPaint);
-    canvas.drawPath(rightLungPath, strokePaint);
-    canvas.drawPath(leftLungPath, strokePaint);
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final center = Offset(
+          constraints.maxWidth / 2,
+          constraints.maxHeight * 0.45,
+        );
+        final scale =
+            math.min(constraints.maxWidth, constraints.maxHeight) * 0.45;
+        _updatePaths(center, scale);
+
+        return RepaintBoundary(
+          child: CustomPaint(
+            size: Size(widget.size, widget.size),
+            painter: LungPainter(
+              animationValue: _controller.value,
+              isRecording: widget.isRecording,
+              confidence: widget.confidence,
+              disease: widget.disease,
+              rightLung: _cachedRightLung!,
+              leftLung: _cachedLeftLung!,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class LungPainter extends CustomPainter {
+  LungPainter({
+    required this.animationValue,
+    required this.isRecording,
+    required this.confidence,
+    required this.rightLung,
+    required this.leftLung,
+    this.disease,
+  });
+
+  final double animationValue;
+  final bool isRecording;
+  final double confidence;
+  final Path rightLung;
+  final Path leftLung;
+  final String? disease;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.45);
+    final scale = math.min(size.width, size.height) * 0.45;
+
+    _drawLobes(canvas, center, scale);
+    _drawBronchialTree(canvas, center, scale);
+    if (isRecording) {
+      _drawParticles(canvas, center, scale);
+    }
+    if (disease != null &&
+        disease != 'Normal' &&
+        disease != 'No abnormality detected') {
+      _drawDiseaseOverlay(canvas, center, scale);
+    }
+  }
+
+  void _drawLobes(Canvas canvas, Offset center, double scale) {
+    final baseColor = AppTheme.mentholCyan;
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = baseColor.withValues(alpha: 0.4);
+
+    final fillPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.radial(center, scale * 1.5, [
+        baseColor.withValues(alpha: 0.1),
+        baseColor.withValues(alpha: 0.0),
+      ]);
+
+    if (confidence < 0.8) {
+      final blur = (1.0 - confidence) * 8.0;
+      strokePaint.maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+    }
+
+    canvas.drawPath(rightLung, fillPaint);
+    canvas.drawPath(leftLung, fillPaint);
+    canvas.drawPath(rightLung, strokePaint);
+    canvas.drawPath(leftLung, strokePaint);
 
     // Subtle internal structure lines
     final linePaint = Paint()
@@ -357,10 +385,6 @@ class LungPainter extends CustomPainter {
         ..color = AppTheme.clinicalAmber.withValues(alpha: 0.3 * pulse)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 
-      final asthmaTree = Path();
-      asthmaTree.moveTo(center.dx - scale * 0.5, center.dy);
-      asthmaTree.lineTo(center.dx + scale * 0.5, center.dy);
-
       // Draw some constricting rings
       for (int i = 0; i < 5; i++) {
         canvas.drawCircle(
@@ -369,6 +393,28 @@ class LungPainter extends CustomPainter {
           paint,
         );
       }
+    } else if (disease == 'COPD') {
+      // Diffuse Amber glow across entire lung
+      final paint = Paint()
+        ..style = PaintingStyle.fill
+        ..color = AppTheme.clinicalAmber.withValues(
+          alpha: 0.1 + 0.05 * math.sin(animationValue * 2 * math.pi),
+        )
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+
+      canvas.drawPath(rightLung, paint);
+      canvas.drawPath(leftLung, paint);
+    } else if (disease == 'Other') {
+      // Generic abnormality: Pulse the outline
+      final pulse = 0.5 + 0.5 * math.sin(animationValue * 3 * math.pi);
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..color = AppTheme.clinicalAmber.withValues(alpha: 0.4 * pulse)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+      canvas.drawPath(rightLung, paint);
+      canvas.drawPath(leftLung, paint);
     }
   }
 

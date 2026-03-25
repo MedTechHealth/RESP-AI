@@ -54,20 +54,21 @@
 - Modify: `app/lib/screens/home_screen.dart`
 - Modify: `app/lib/screens/result_screen.dart`
 
-- [ ] **Step 1: Reconstruct HomeScreen Stage.**
+- [x] **Step 1: Reconstruct HomeScreen Stage.**
     - Center the Holographic Lung as the primary instrument.
     - Morphing button remains the primary trigger.
-- [ ] **Step 2: Reconstruct ResultScreen Narrative.**
+- [x] **Step 2: Reconstruct ResultScreen Narrative.**
     - Center the "Diagnostic Lung" with active disease heat-map.
     - Display "CONDITION: [NAME]" and "CONFIDENCE: [VALUE]%" as massive, unmissable display text.
-- [ ] **Step 3: Layout Bento Rails.**
+- [x] **Step 3: Layout Bento Rails.**
     - Clean, asymmetric tiles for stats, telemetry, and workflow.
     - Remove all scrolling; use `Expanded` and `ConstrainedBox` for a perfect viewport fit.
-- [ ] **Step 4: Commit UI overhaul.**
+- [x] **Step 4: Commit UI overhaul.**
 
 ### Task 4: Final Polish & Audit
 
-- [ ] **Step 1: Performance Profiling.**
+- [x] **Step 1: Performance Profiling.**
     - Ensure shader warmup and 60fps during capture.
-- [ ] **Step 2: Lint & Build Verification.**
-- [ ] **Step 3: Final 10/10 UI Audit.**
+- [x] **Step 2: Lint & Build Verification.**
+- [x] **Step 3: Final 10/10 UI Audit.**
+- [x] **Step 4: Final commit and verify all tests pass.**

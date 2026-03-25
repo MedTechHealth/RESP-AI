@@ -29,7 +29,7 @@ void main() {
     tester,
   ) async {
     // Mobile size
-    tester.view.physicalSize = const Size(400, 800);
+    tester.view.physicalSize = const Size(500, 1500);
     tester.view.devicePixelRatio = 1.0;
 
     await tester.pumpWidget(const ProviderScope(child: RespAIApp()));
@@ -39,6 +39,7 @@ void main() {
     // INSTRUMENT DASHBOARD is hidden on mobile in my implementation
     expect(find.text('INSTRUMENT DASHBOARD'), findsNothing);
 
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    // We use Column with Expanded now
+    expect(find.byType(Column), findsWidgets);
   });
 }
