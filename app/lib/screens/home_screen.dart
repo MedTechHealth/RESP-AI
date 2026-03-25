@@ -15,6 +15,7 @@ import '../services/api_service.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/breath_halo_button.dart';
+import '../widgets/holographic_lung.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/modern_glass_card.dart';
 import 'result_screen.dart';
@@ -233,23 +234,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       )
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: <Widget>[
-                            _buildStage(
+                    : Column(
+                        children: <Widget>[
+                          Expanded(
+                            flex: 6,
+                            child: _buildStage(
                               context,
                               recordingState,
                               isMobile: true,
                             ),
-                            const SizedBox(height: 24),
-                            _buildBentoRail(
+                          ),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            flex: 5,
+                            child: _buildBentoRail(
                               context,
                               recordingState,
                               isMobile: true,
                             ),
-                            const SizedBox(height: 40),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -340,14 +344,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     RecordingState state, {
     bool isMobile = false,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        isMobile
-            ? SizedBox(height: 480, child: _buildStageCard(context, state))
-            : Expanded(child: _buildStageCard(context, state)),
-      ],
-    );
+    return _buildStageCard(context, state);
   }
 
   Widget _buildStageCard(BuildContext context, RecordingState state) {
@@ -404,29 +401,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }) {
     return Column(
       children: <Widget>[
-        isMobile
-            ? SizedBox(
-                height: 400,
-                child: _buildClinicalProtocolCard(context, state),
-              )
-            : Expanded(
-                flex: 5,
-                child: _buildClinicalProtocolCard(context, state),
-              ),
-        const SizedBox(height: 20),
-        isMobile
-            ? SizedBox(height: 140, child: _buildTelemetryGrid(context, state))
-            : Expanded(flex: 4, child: _buildTelemetryGrid(context, state)),
-        const SizedBox(height: 20),
-        isMobile
-            ? SizedBox(
-                height: 160,
-                child: _buildSampleManagementCard(context, state),
-              )
-            : Expanded(
-                flex: 3,
-                child: _buildSampleManagementCard(context, state),
-              ),
+        Expanded(flex: 5, child: _buildClinicalProtocolCard(context, state)),
+        const SizedBox(height: 16),
+        Expanded(flex: 4, child: _buildTelemetryGrid(context, state)),
+        const SizedBox(height: 16),
+        Expanded(flex: 3, child: _buildSampleManagementCard(context, state)),
       ],
     );
   }
@@ -441,10 +420,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildEyebrow(context, 'Clinical Protocol'),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 _buildStep(
                   context,
@@ -484,6 +463,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Row(
       children: <Widget>[
         Expanded(
+          flex: 3,
           child: ModernGlassCard(
             padding: const EdgeInsets.all(20),
             child: _buildTelemetryTile(
@@ -491,12 +471,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: 'SIGNAL',
               value: state.isRecording ? 'STREAMING' : 'IDLE',
               icon: LucideIcons.activity,
-              accent: state.isRecording ? AppTheme.oxide : AppTheme.slateMuted,
+              accent: state.isRecording ? AppTheme.oxide : AppTheme.mentholCyan,
             ),
           ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 16),
         Expanded(
+          flex: 2,
           child: ModernGlassCard(
             padding: const EdgeInsets.all(20),
             child: _buildTelemetryTile(
@@ -504,7 +485,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: 'LATENCY',
               value: '< 120ms',
               icon: LucideIcons.zap,
-              accent: AppTheme.respiratoryTeal,
+              accent: AppTheme.mentholCyan,
             ),
           ),
         ),

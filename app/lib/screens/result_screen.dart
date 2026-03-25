@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../models/analysis_result.dart';
 import '../theme/app_theme.dart';
+import '../widgets/holographic_lung.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/modern_glass_card.dart';
 
@@ -16,67 +16,59 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool useWideLayout = MediaQuery.sizeOf(context).width >= 980;
+    final bool useWideLayout = MediaQuery.sizeOf(context).width >= 1024;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        toolbarHeight: 64,
-        title: Text(
-          'Clinical Review',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontSize: 14, letterSpacing: 0.4),
+        toolbarHeight: 80,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, size: 18),
-          tooltip: 'Back to Dashboard',
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: _buildAppBarTitle(context),
+        actions: _buildAppBarActions(context),
       ),
       body: MeshBackground(
         child: SafeArea(
+          bottom: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: _clamp(20, 40, MediaQuery.sizeOf(context).width),
+              vertical: _clamp(12, 24, MediaQuery.sizeOf(context).height),
+            ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1240),
+                constraints: const BoxConstraints(maxWidth: 1800),
                 child: useWideLayout
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          _buildNarrativeHeader(context)
-                              .animate()
-                              .fadeIn(duration: 400.ms)
-                              .moveY(begin: 12, end: 0),
-                          const SizedBox(height: 20),
+                          // Left Rail: Assessment stats
                           Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Expanded(
-                                  flex: 7,
-                                  child: _buildMainColumn(context, true),
-                                ),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  flex: 4,
-                                  child: _buildSideColumn(context, true),
-                                ),
-                              ],
-                            ),
+                            flex: 3,
+                            child: _buildAssessmentRail(context),
                           ),
+                          const SizedBox(width: 20),
+                          // Center Stage: Diagnostic Lung & Massive Result
+                          Expanded(flex: 6, child: _buildResultStage(context)),
+                          const SizedBox(width: 20),
+                          // Right Rail: Protocols & Context
+                          Expanded(flex: 3, child: _buildContextRail(context)),
                         ],
                       )
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: <Widget>[
-                            _buildNarrativeHeader(context),
-                            const SizedBox(height: 20),
-                            _buildMainColumn(context, false),
-                            const SizedBox(height: 20),
-                            _buildSideColumn(context, false),
-                          ],
-                        ),
+                    : Column(
+                        children: <Widget>[
+                          Expanded(flex: 7, child: _buildResultStage(context)),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            flex: 5,
+                            child: _buildAssessmentRail(context),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -86,56 +78,133 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNarrativeHeader(BuildContext context) {
-    return ModernGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              _buildEyebrow(
-                context,
-                'Respiratory Profile · ID: ${result.filename.split('/').last}',
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.slate.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'CONFIDENTIAL',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 9,
-                    letterSpacing: 2.0,
-                    color: AppTheme.slate.withValues(alpha: 0.5),
-                  ),
-                ),
-              ),
-            ],
+  double _clamp(double min, double max, double screenDim) {
+    return (screenDim / 100).clamp(min, max);
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          'CLINICAL REVIEW',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: 10,
+            letterSpacing: 1.5,
+            color: AppTheme.vicksBlue.withValues(alpha: 0.6),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Clinical Risk Narrative',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.8,
+        ),
+        Text(
+          'ID: ${result.filename.split('/').last}',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontSize: 12,
+            color: AppTheme.vicksBlue,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildAppBarActions(BuildContext context) {
+    return <Widget>[
+      Container(
+        margin: const EdgeInsets.only(right: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppTheme.vicksBlue.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.glassBorder, width: 0.5),
+        ),
+        child: Text(
+          'SECURE SESSION',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: 9,
+            letterSpacing: 1.2,
+            color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildResultStage(BuildContext context) {
+    final String condition = result.diseaseAssociation.condition.toUpperCase();
+    final double confidence = result.probability * 100;
+
+    return ModernGlassCard(
+      padding: EdgeInsets.zero,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          // Background Center Viz
+          Center(
+            child: Opacity(
+              opacity: 0.8,
+              child: HolographicLung(
+                isRecording: false,
+                confidence: result.probability,
+                disease: result.diseaseAssociation.condition,
+                size: 500,
+              ),
             ),
           ),
-          const SizedBox(height: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Text(
-              _summarySentence(),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                height: 1.7,
-                color: AppTheme.slateSoft,
+          // Massive Top Result
+          Positioned(
+            top: 40,
+            left: 40,
+            right: 40,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _buildEyebrow(context, 'Primary Finding'),
+                const SizedBox(height: 12),
+                Text(
+                  'CONDITION: $condition',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontSize: 48,
+                    color: AppTheme.vicksBlue,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'CONFIDENCE: ${confidence.toStringAsFixed(1)}%',
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    fontSize: 32,
+                    color: AppTheme.mentholCyan,
+                    height: 1.0,
+                    fontFeatures: AppTheme.tabularFigures,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Bottom Narrative
+          Positioned(
+            bottom: 40,
+            left: 40,
+            right: 40,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: ModernGlassCard(
+                padding: const EdgeInsets.all(24),
+                tint: AppTheme.vicksBlue.withValues(alpha: 0.03),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _buildEyebrow(context, 'Clinical Narrative'),
+                    const SizedBox(height: 12),
+                    Text(
+                      _summarySentence(),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontSize: 15,
+                        color: AppTheme.vicksBlue.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -144,206 +213,22 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMainColumn(BuildContext context, bool useWideLayout) {
+  Widget _buildAssessmentRail(BuildContext context) {
     return Column(
       children: <Widget>[
-        _buildScorePanel(context)
-            .animate()
-            .fadeIn(delay: 80.ms, duration: 420.ms)
-            .moveY(begin: 12, end: 0),
-        const SizedBox(height: 20),
-        if (useWideLayout)
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildEvidenceGrid(
-                context,
-              ).animate().fadeIn(delay: 140.ms, duration: 420.ms),
-            ),
-          )
-        else
-          _buildEvidenceGrid(context),
+        Expanded(flex: 4, child: _buildConfidencePanel(context)),
+        const SizedBox(height: 16),
+        Expanded(flex: 6, child: _buildScorePanel(context)),
       ],
     );
   }
 
-  Widget _buildSideColumn(BuildContext context, bool useWideLayout) {
+  Widget _buildContextRail(BuildContext context) {
     return Column(
       children: <Widget>[
-        _buildConfidencePanel(
-          context,
-        ).animate().fadeIn(delay: 200.ms, duration: 420.ms),
-        const SizedBox(height: 20),
-        if (useWideLayout)
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildRecommendationPanel(
-                context,
-              ).animate().fadeIn(delay: 260.ms, duration: 420.ms),
-            ),
-          )
-        else
-          _buildRecommendationPanel(context),
-      ],
-    );
-  }
-
-  Widget _buildScorePanel(BuildContext context) {
-    final Color riskColor = _riskColor(result.riskScore);
-
-    return ModernGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool stacked = constraints.maxWidth < 720;
-          final Widget dial = RepaintBoundary(
-            child: SizedBox(
-              width: 280,
-              height: 220,
-              child: CustomPaint(
-                painter: _RiskDialPainter(
-                  score: result.riskScore,
-                  color: riskColor,
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Text(
-                          result.riskScore.toStringAsFixed(1),
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(
-                                fontSize: 68,
-                                fontWeight: FontWeight.w800,
-                                height: 1.0,
-                                fontFeatures: AppTheme.tabularFigures,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          result.classification.toUpperCase(),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: riskColor,
-                                letterSpacing: 1.2,
-                                fontWeight: FontWeight.w900,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          final Widget narrative = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _buildEyebrow(context, 'Instrument Signal'),
-              const SizedBox(height: 16),
-              Text(
-                _riskHeadline(),
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontSize: 22,
-                  letterSpacing: -0.4,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Pattern matching score derived from spectral analysis of audio telemetry.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  color: AppTheme.slateSoft,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: <Widget>[
-                  _metricChip(
-                    context,
-                    icon: LucideIcons.activity,
-                    label: 'Clinical Band',
-                    value: _riskBand(),
-                    accent: riskColor,
-                  ),
-                  _metricChip(
-                    context,
-                    icon: LucideIcons.target,
-                    label: 'Precision',
-                    value: '${(result.probability * 100).toStringAsFixed(1)}%',
-                    accent: AppTheme.slateSoft,
-                  ),
-                ],
-              ),
-            ],
-          );
-
-          if (stacked) {
-            return Column(
-              children: <Widget>[dial, const SizedBox(height: 16), narrative],
-            );
-          }
-
-          return Row(
-            children: <Widget>[
-              dial,
-              const SizedBox(width: 32),
-              Expanded(child: narrative),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEvidenceGrid(BuildContext context) {
-    final List<dynamic> anomalies =
-        (result.details['detected_anomalies'] as List<dynamic>?) ?? <dynamic>[];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: <Widget>[
-        _evidenceCard(
-          context,
-          title: 'Pattern Match',
-          value: result.diseaseAssociation.condition,
-          body: result.diseaseAssociation.disclaimer,
-          icon: LucideIcons.fingerprint,
-          accent: AppTheme.respiratoryTeal,
-        ),
-        _evidenceCard(
-          context,
-          title: 'Classification',
-          value: result.classification,
-          body: 'Model output label.',
-          icon: LucideIcons.cpu,
-          accent: AppTheme.gold,
-        ),
-        _evidenceCard(
-          context,
-          title: 'Reference',
-          value: result.filename.split('/').last,
-          body: 'Analyzed recording.',
-          icon: LucideIcons.fileAudio,
-          accent: AppTheme.success,
-        ),
-        _evidenceCard(
-          context,
-          title: 'Anomalies',
-          value: anomalies.isEmpty ? 'None' : anomalies.join(', '),
-          body: anomalies.isEmpty
-              ? 'No explicit anomalies.'
-              : 'Reported markers.',
-          icon: LucideIcons.alertTriangle,
-          accent: AppTheme.oxide,
-        ),
+        Expanded(flex: 5, child: _buildRecommendationPanel(context)),
+        const SizedBox(height: 16),
+        Expanded(flex: 5, child: _buildEvidenceGrid(context)),
       ],
     );
   }
@@ -353,7 +238,7 @@ class ResultScreen extends StatelessWidget {
     final Color accent = confidencePercent >= 75
         ? AppTheme.success
         : confidencePercent >= 45
-        ? AppTheme.gold
+        ? AppTheme.clinicalAmber
         : AppTheme.oxide;
 
     return ModernGlassCard(
@@ -362,6 +247,7 @@ class ResultScreen extends StatelessWidget {
       borderColor: accent.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           _buildEyebrow(context, 'Classification Confidence'),
           const SizedBox(height: 14),
@@ -374,7 +260,7 @@ class ResultScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.slate,
+                  color: AppTheme.vicksBlue,
                   fontFeatures: AppTheme.tabularFigures,
                 ),
               ),
@@ -382,7 +268,7 @@ class ResultScreen extends StatelessWidget {
               Text(
                 '%',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.slateMuted,
+                  color: AppTheme.vicksBlue.withValues(alpha: 0.5),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -393,7 +279,7 @@ class ResultScreen extends StatelessWidget {
             'Association Confidence: ${result.diseaseAssociation.confidence}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.slateSoft,
+              color: AppTheme.vicksBlue.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 18),
@@ -409,6 +295,169 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildScorePanel(BuildContext context) {
+    final Color riskColor = _riskColor(result.riskScore);
+
+    return ModernGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _buildEyebrow(context, 'Instrument Signal'),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Center(
+              child: RepaintBoundary(
+                child: AspectRatio(
+                  aspectRatio: 1.5,
+                  child: CustomPaint(
+                    painter: _RiskDialPainter(
+                      score: result.riskScore,
+                      color: riskColor,
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              result.riskScore.toStringAsFixed(1),
+                              style: Theme.of(context).textTheme.displayLarge
+                                  ?.copyWith(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.vicksBlue,
+                                    height: 1.0,
+                                    fontFeatures: AppTheme.tabularFigures,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              result.classification.toUpperCase(),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: riskColor,
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _riskHeadline(),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.vicksBlue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEvidenceGrid(BuildContext context) {
+    final List<dynamic> anomalies =
+        (result.details['detected_anomalies'] as List<dynamic>?) ?? <dynamic>[];
+
+    return ModernGlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _buildEyebrow(context, 'Telemetry Markers'),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              children: <Widget>[
+                _evidenceRow(
+                  context,
+                  title: 'Pattern',
+                  value: result.diseaseAssociation.condition,
+                  icon: LucideIcons.fingerprint,
+                  accent: AppTheme.mentholCyan,
+                ),
+                const Divider(height: 24),
+                _evidenceRow(
+                  context,
+                  title: 'Model',
+                  value: result.classification,
+                  icon: LucideIcons.cpu,
+                  accent: AppTheme.clinicalAmber,
+                ),
+                const Divider(height: 24),
+                _evidenceRow(
+                  context,
+                  title: 'Markers',
+                  value: anomalies.isEmpty ? 'None' : anomalies.join(', '),
+                  icon: LucideIcons.alertTriangle,
+                  accent: AppTheme.oxide,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _evidenceRow(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color accent,
+  }) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 14, color: accent),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 9,
+                  color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+                ),
+              ),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontSize: 13,
+                  color: AppTheme.vicksBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRecommendationPanel(BuildContext context) {
     return ModernGlassCard(
       padding: const EdgeInsets.all(24),
@@ -417,119 +466,31 @@ class ResultScreen extends StatelessWidget {
         children: <Widget>[
           _buildEyebrow(context, 'Clinical Context'),
           const SizedBox(height: 16),
-          _noteRow(
-            context,
-            icon: LucideIcons.stethoscope,
-            text: 'Decision support tool only. Not a clinical diagnosis.',
-          ),
-          const SizedBox(height: 12),
-          _noteRow(
-            context,
-            icon: LucideIcons.shieldAlert,
-            text:
-                (result.details['medical_disclaimer'] as String?) ??
-                'Research prototype. Professional consultation required.',
-          ),
-          const SizedBox(height: 12),
-          _noteRow(
-            context,
-            icon: LucideIcons.rotateCcw,
-            text: 'Repeat analysis if significant ambient noise was present.',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricChip(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: accent),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(label, style: Theme.of(context).textTheme.labelSmall),
-              Text(
-                value,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(color: AppTheme.slate),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _evidenceCard(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required String body,
-    required IconData icon,
-    required Color accent,
-  }) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
-      child: ModernGlassCard(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, size: 12, color: accent),
+                _noteRow(
+                  context,
+                  icon: LucideIcons.stethoscope,
+                  text: 'Decision support tool only. Not a clinical diagnosis.',
                 ),
-                const SizedBox(width: 8),
-                Text(title, style: Theme.of(context).textTheme.labelSmall),
+                _noteRow(
+                  context,
+                  icon: LucideIcons.shieldAlert,
+                  text:
+                      (result.details['medical_disclaimer'] as String?) ??
+                      'Professional consultation required.',
+                ),
+                _noteRow(
+                  context,
+                  icon: LucideIcons.rotateCcw,
+                  text: 'Repeat analysis if ambient noise was present.',
+                ),
               ],
             ),
-            const SizedBox(height: 14),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontSize: 15,
-                fontFeatures: AppTheme.tabularFigures,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              body,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                color: AppTheme.slateMuted,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -544,11 +505,21 @@ class ResultScreen extends StatelessWidget {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.only(top: 3),
-          child: Icon(icon, size: 14, color: AppTheme.slateMuted),
+          child: Icon(
+            icon,
+            size: 14,
+            color: AppTheme.vicksBlue.withValues(alpha: 0.4),
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: AppTheme.vicksBlue.withValues(alpha: 0.7),
+            ),
+          ),
         ),
       ],
     );
@@ -558,7 +529,7 @@ class ResultScreen extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: AppTheme.slateMuted,
+        color: AppTheme.vicksBlue.withValues(alpha: 0.5),
         letterSpacing: 1.1,
       ),
     );
@@ -595,7 +566,7 @@ class ResultScreen extends StatelessWidget {
       return AppTheme.oxide;
     }
     if (score >= 4) {
-      return AppTheme.gold;
+      return AppTheme.clinicalAmber;
     }
     return AppTheme.success;
   }
@@ -651,10 +622,10 @@ class _RiskDialPainter extends CustomPainter {
 
     // Precision Ticks
     final Paint majorTick = Paint()
-      ..color = AppTheme.slate.withValues(alpha: 0.4)
+      ..color = AppTheme.vicksBlue.withValues(alpha: 0.4)
       ..strokeWidth = 1.2;
     final Paint minorTick = Paint()
-      ..color = AppTheme.slate.withValues(alpha: 0.15)
+      ..color = AppTheme.vicksBlue.withValues(alpha: 0.15)
       ..strokeWidth = 0.8;
 
     for (int index = 0; index <= 40; index++) {
@@ -673,7 +644,7 @@ class _RiskDialPainter extends CustomPainter {
 
     // Needle
     final Paint needlePaint = Paint()
-      ..color = AppTheme.slate
+      ..color = AppTheme.vicksBlue
       ..style = PaintingStyle.fill;
 
     final double needleAngle = math.pi + sweep;
