@@ -29,10 +29,10 @@ class ModernGlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
           decoration: BoxDecoration(
-            color: (tint ?? Colors.white).withValues(alpha: 0.1),
+            color: (tint ?? Colors.white).withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: borderColor ?? AppTheme.glassBorder.withValues(alpha: 0.5),
+              color: borderColor ?? AppTheme.glassBorder,
               width: 0.5,
             ),
           ),

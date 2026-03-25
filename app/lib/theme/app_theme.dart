@@ -2,27 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Frost & Slate Palette
-  static const slate = Color(0xFF0F172A);
-  static const slateSoft = Color(0xFF334155);
-  static const slateMuted = Color(0xFF64748B);
-
-  static const frost = Color(0xFFF5F7FA);
-  static const frostDeep = Color(0xFFE2E8F0);
-  static const glass = Color(0xFFFFFFFF);
-  static const glassBorder = Color(0xFFE2E8F0);
-
-  static const respiratoryTeal = Color(0xFF0D9488);
-  static const respiratoryTealSoft = Color(0xFFCCFBFE);
-  static const oxide = Color(0xFFE11D48);
-  static const oxideSoft = Color(0xFFFFF1F2);
-  static const gold = Color(0xFFCA8A04);
-  static const goldSoft = Color(0xFFFEF9C3);
+  // Vicks Palette (Parchment & Menthol)
+  static const parchment = Color(0xFFF5F0E6);
+  static const vicksBlue = Color(0xFF003366);
+  static const vicksBlueSoft = Color(0xFFE0E7FF);
+  static const mentholCyan = Color(0xFF00C6B5);
+  static const clinicalAmber = Color(0xFFFFB800);
   static const success = Color(0xFF16A34A);
+  static const oxide = Color(0xFFE11D48);
 
-  static const shadow = Color(0x0F0F172A);
+  static const glassBorder = Color(0x1A003366); // vicksBlue with 0.1 alpha
+  static const shadow = Color(0x0F003366);
+
+  // Aliases for backward compatibility during transition
+  static const slate = vicksBlue;
+  static const slateSoft = vicksBlueSoft;
+  static const slateMuted = Color(0xB3003366); // vicksBlue 0.7 alpha
+  static const frost = parchment;
+  static const frostDeep = Color(0xFFE8E4D8); // Slightly darker parchment
+  static const glass = Colors.white;
+  static const respiratoryTeal = mentholCyan;
+  static const respiratoryTealSoft = Color(0x3300C6B5); // mentholCyan 0.2 alpha
+  static const gold = clinicalAmber;
+  static const goldSoft = Color(0x33FFB800); // clinicalAmber 0.2 alpha
 
   static TextTheme _textTheme(Color bodyColor, Color mutedColor) {
+    final baseFeatures = [const FontFeature.tabularFigures()];
+
     return TextTheme(
       displayLarge: GoogleFonts.fraunces(
         color: bodyColor,
@@ -69,30 +75,35 @@ class AppTheme {
         fontSize: 16,
         height: 1.6,
         fontWeight: FontWeight.w400,
+        fontFeatures: baseFeatures,
       ),
       bodyMedium: GoogleFonts.dmSans(
         color: mutedColor,
         fontSize: 14,
         height: 1.6,
         fontWeight: FontWeight.w400,
+        fontFeatures: baseFeatures,
       ),
       labelLarge: GoogleFonts.dmSans(
         color: bodyColor,
         fontSize: 14,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.2,
+        fontFeatures: baseFeatures,
       ),
       labelMedium: GoogleFonts.dmSans(
         color: mutedColor,
         fontSize: 12,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
+        fontFeatures: baseFeatures,
       ),
       labelSmall: GoogleFonts.dmSans(
         color: mutedColor,
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.0,
+        fontFeatures: baseFeatures,
       ),
     );
   }
@@ -100,36 +111,36 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    scaffoldBackgroundColor: frost,
-    primaryColor: respiratoryTeal,
+    scaffoldBackgroundColor: parchment,
+    primaryColor: mentholCyan,
     colorScheme: const ColorScheme.light(
-      primary: slate,
+      primary: vicksBlue,
       onPrimary: Colors.white,
-      secondary: gold,
+      secondary: mentholCyan,
       onSecondary: Colors.white,
-      surface: Colors.white,
-      onSurface: slate,
+      surface: parchment,
+      onSurface: vicksBlue,
       error: oxide,
       onError: Colors.white,
       outline: glassBorder,
-      surfaceContainerHighest: frostDeep,
-      tertiary: success,
+      surfaceContainerHighest: vicksBlueSoft,
+      tertiary: clinicalAmber,
     ),
-    textTheme: _textTheme(slate, slateMuted),
+    textTheme: _textTheme(vicksBlue, vicksBlue.withValues(alpha: 0.7)),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
-      iconTheme: const IconThemeData(color: slate),
+      iconTheme: const IconThemeData(color: vicksBlue),
       titleTextStyle: GoogleFonts.dmSans(
-        color: slate,
+        color: vicksBlue,
         fontSize: 16,
         fontWeight: FontWeight.w700,
       ),
     ),
     cardTheme: CardThemeData(
-      color: Colors.white.withValues(alpha: 0.8),
+      color: Colors.white.withValues(alpha: 0.6),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -142,10 +153,10 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        backgroundColor: slate,
+        backgroundColor: vicksBlue,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: frostDeep,
-        disabledForegroundColor: slateMuted,
+        disabledBackgroundColor: vicksBlueSoft,
+        disabledForegroundColor: vicksBlue.withValues(alpha: 0.5),
         elevation: 0,
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -159,7 +170,7 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        foregroundColor: slate,
+        foregroundColor: vicksBlue,
         side: const BorderSide(color: glassBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
@@ -171,7 +182,7 @@ class AppTheme {
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
-        foregroundColor: slate,
+        foregroundColor: vicksBlue,
         backgroundColor: Colors.white.withValues(alpha: 0.5),
         minimumSize: const Size(44, 44),
       ),
@@ -181,16 +192,16 @@ class AppTheme {
 
   static ThemeData darkTheme = lightTheme.copyWith(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: const Color(0xFF020617), // Slate 950
+    scaffoldBackgroundColor: const Color(0xFF001A33), // Deepest Vicks Blue
     colorScheme: const ColorScheme.dark(
       primary: Colors.white,
-      onPrimary: slate,
-      secondary: gold,
-      surface: Color(0xFF0F172A), // Slate 900
-      onSurface: Color(0xFFF1F5F9), // Slate 100
+      onPrimary: vicksBlue,
+      secondary: mentholCyan,
+      surface: Color(0xFF00264D),
+      onSurface: Color(0xFFF1F5F9),
       error: oxide,
-      outline: Color(0xFF1E293B), // Slate 800
-      tertiary: success,
+      outline: Color(0xFF003366),
+      tertiary: clinicalAmber,
     ),
     textTheme: _textTheme(const Color(0xFFF1F5F9), const Color(0xFF94A3B8)),
   );
