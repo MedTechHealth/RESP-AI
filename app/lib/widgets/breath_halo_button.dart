@@ -4,8 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_theme.dart';
-import 'reactive_liquid_ripple.dart';
-import 'holographic_lung.dart';
+// Removed ReactiveLiquidRipple and HolographicLung imports as per plan
 
 class BreathHaloButton extends StatelessWidget {
   const BreathHaloButton({
@@ -25,7 +24,9 @@ class BreathHaloButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color accent = isRecording ? AppTheme.oxide : AppTheme.mentholCyan;
+    final Color accent = isRecording
+        ? AppTheme.alertCoral
+        : AppTheme.vaprupTeal;
     final String label = isAnalyzing
         ? 'ANALYZING'
         : isRecording
@@ -46,24 +47,9 @@ class BreathHaloButton extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
-            IgnorePointer(
-              child: RepaintBoundary(
-                child: ReactiveLiquidRipple(
-                  size: 300,
-                  color: accent,
-                  amplitude: isRecording ? amplitude : 0.15,
-                  isAnimating: isRecording || isAnalyzing,
-                ),
-              ),
-            ),
-            // Holographic Lung Viz
-            IgnorePointer(
-              child: HolographicLung(
-                isRecording: isRecording,
-                size: 240,
-                confidence: 1.0, // Default for home screen
-              ),
-            ),
+            // Removed ReactiveLiquidRipple usage as per plan
+            // Removed HolographicLung usage as per plan
+
             // Morphing Background
             AnimatedContainer(
               duration: const Duration(milliseconds: 600),
@@ -71,15 +57,17 @@ class BreathHaloButton extends StatelessWidget {
               width: isRecording ? 200 : 180,
               height: isRecording ? 200 : 180,
               decoration: BoxDecoration(
-                color: AppTheme.glass.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.surface.withAlpha(
+                  (0.1 * 255).round(),
+                ), // AppTheme.glass
                 borderRadius: BorderRadius.circular(isRecording ? 48 : 100),
                 border: Border.all(
-                  color: accent.withValues(alpha: 0.25),
+                  color: accent.withAlpha((0.25 * 255).round()),
                   width: 1,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.12),
+                    color: accent.withAlpha((0.12 * 255).round()),
                     blurRadius: 32,
                     offset: const Offset(0, 16),
                   ),
@@ -99,8 +87,12 @@ class BreathHaloButton extends StatelessWidget {
                   height: isRecording ? 160 : 160,
                   decoration: BoxDecoration(
                     color: isAnalyzing
-                        ? AppTheme.frostDeep.withValues(alpha: 0.8)
-                        : AppTheme.vicksBlue.withValues(alpha: 0.1),
+                        ? AppTheme.vaprupMint.withAlpha(
+                            (0.8 * 255).round(),
+                          ) // AppTheme.frostDeep
+                        : AppTheme.vaprupBlue.withAlpha(
+                            (0.1 * 255).round(),
+                          ), // AppTheme.vicksBlue
                     borderRadius: BorderRadius.circular(isRecording ? 40 : 80),
                   ),
                   child: Column(
@@ -110,8 +102,10 @@ class BreathHaloButton extends StatelessWidget {
                             icon,
                             size: 32,
                             color: isAnalyzing
-                                ? AppTheme.vicksBlue.withValues(alpha: 0.5)
-                                : AppTheme.vicksBlue,
+                                ? AppTheme.vaprupBlue.withAlpha(
+                                    (0.5 * 255).round(),
+                                  ) // AppTheme.vicksBlue
+                                : AppTheme.vaprupBlue, // AppTheme.vicksBlue
                           )
                           .animate(
                             onPlay: (controller) {
@@ -127,8 +121,10 @@ class BreathHaloButton extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: isAnalyzing
-                              ? AppTheme.vicksBlue.withValues(alpha: 0.5)
-                              : AppTheme.vicksBlue,
+                              ? AppTheme.vaprupBlue.withAlpha(
+                                  (0.5 * 255).round(),
+                                ) // AppTheme.vicksBlue
+                              : AppTheme.vaprupBlue, // AppTheme.vicksBlue
                           fontSize: 10,
                           letterSpacing: 1.2,
                           fontWeight: FontWeight.w700,
@@ -141,9 +137,10 @@ class BreathHaloButton extends StatelessWidget {
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           color: isAnalyzing
-                              ? AppTheme.vicksBlue.withValues(alpha: 0.5)
-                              : AppTheme.vicksBlue,
-                          fontFeatures: AppTheme.tabularFigures,
+                              ? AppTheme.vaprupBlue.withAlpha(
+                                  (0.5 * 255).round(),
+                                ) // AppTheme.vicksBlue
+                              : AppTheme.vaprupBlue, // AppTheme.vicksBlue
                         ),
                       ),
                     ],

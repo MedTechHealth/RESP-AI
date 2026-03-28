@@ -38,6 +38,8 @@ class _MeshBackgroundState extends State<MeshBackground>
       context,
     ).colorScheme.background; // Should be vaprupMint in Vaprup theme
 
+    final Size size = MediaQuery.sizeOf(context); // Define size here
+
     return Stack(
       children: <Widget>[
         // Base background color

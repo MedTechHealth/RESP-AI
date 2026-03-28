@@ -1,13 +1,15 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+// import 'package:responsive_framework/responsive_framework.dart'; // Removed: not used directly after changes
 
 import '../models/analysis_result.dart';
 import '../theme/app_theme.dart';
-import '../widgets/holographic_lung.dart';
+// import '../widgets/holographic_lung.dart'; // Removed HolographicLung
 import '../widgets/mesh_background.dart';
-import '../widgets/modern_glass_card.dart';
+import '../widgets/modern_glass_card.dart'; // Will be replaced by GlassmorphicContainer later
 
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key, required this.result});
@@ -92,14 +94,14 @@ class ResultScreen extends StatelessWidget {
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             fontSize: 10,
             letterSpacing: 1.5,
-            color: AppTheme.vicksBlue.withValues(alpha: 0.6),
+            color: AppTheme.vaprupBlue.withAlpha((0.6 * 255).round()),
           ),
         ),
         Text(
           'ID: ${result.filename.split('/').last}',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontSize: 12,
-            color: AppTheme.vicksBlue,
+            color: AppTheme.vaprupBlue,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -113,16 +115,21 @@ class ResultScreen extends StatelessWidget {
         margin: const EdgeInsets.only(right: 24),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppTheme.vicksBlue.withValues(alpha: 0.05),
+          color: AppTheme.vaprupBlue.withAlpha((0.05 * 255).round()),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.glassBorder, width: 0.5),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withAlpha((0.5 * 255).round()),
+            width: 0.5,
+          ),
         ),
         child: Text(
           'SECURE SESSION',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             fontSize: 9,
             letterSpacing: 1.2,
-            color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+            color: AppTheme.vaprupBlue.withAlpha((0.5 * 255).round()),
           ),
         ),
       ),
@@ -134,6 +141,7 @@ class ResultScreen extends StatelessWidget {
     final double confidence = result.probability * 100;
 
     return ModernGlassCard(
+      // Will be GlassmorphicContainer in Task 4
       padding: EdgeInsets.zero,
       child: Stack(
         fit: StackFit.expand,
@@ -142,11 +150,16 @@ class ResultScreen extends StatelessWidget {
           Center(
             child: Opacity(
               opacity: 0.8,
-              child: HolographicLung(
-                isRecording: false,
-                confidence: result.probability,
-                disease: result.diseaseAssociation.condition,
-                size: 500,
+              // HolographicLung will be replaced by DynamicLungModel later (Task 5)
+              child: Container(
+                width: 500,
+                height: 500,
+                color: AppTheme.vaprupBlue.withAlpha(
+                  (0.05 * 255).round(),
+                ), // Placeholder color
+                child: const Center(
+                  child: Text('Dynamic Lung Model Placeholder'),
+                ),
               ),
             ),
           ),
@@ -164,7 +177,7 @@ class ResultScreen extends StatelessWidget {
                   'CONDITION: $condition',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     fontSize: 48,
-                    color: AppTheme.vicksBlue,
+                    color: AppTheme.vaprupBlue,
                     height: 1.0,
                   ),
                 ),
@@ -173,9 +186,8 @@ class ResultScreen extends StatelessWidget {
                   'CONFIDENCE: ${confidence.toStringAsFixed(1)}%',
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
                     fontSize: 32,
-                    color: AppTheme.mentholCyan,
+                    color: AppTheme.vaprupTeal,
                     height: 1.0,
-                    fontFeatures: AppTheme.tabularFigures,
                   ),
                 ),
               ],
@@ -189,8 +201,8 @@ class ResultScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
               child: ModernGlassCard(
+                // Will be GlassmorphicContainer in Task 4
                 padding: const EdgeInsets.all(24),
-                tint: AppTheme.vicksBlue.withValues(alpha: 0.03),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -200,7 +212,9 @@ class ResultScreen extends StatelessWidget {
                       _summarySentence(),
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontSize: 15,
-                        color: AppTheme.vicksBlue.withValues(alpha: 0.8),
+                        color: AppTheme.vaprupBlue.withAlpha(
+                          (0.8 * 255).round(),
+                        ),
                       ),
                     ),
                   ],
@@ -236,15 +250,14 @@ class ResultScreen extends StatelessWidget {
   Widget _buildConfidencePanel(BuildContext context) {
     final double confidencePercent = result.probability * 100;
     final Color accent = confidencePercent >= 75
-        ? AppTheme.success
+        ? Theme.of(context).colorScheme.tertiaryContainer
         : confidencePercent >= 45
-        ? AppTheme.clinicalAmber
-        : AppTheme.oxide;
+        ? AppTheme.warningAmber
+        : AppTheme.alertCoral;
 
     return ModernGlassCard(
+      // Will be GlassmorphicContainer in Task 4
       padding: const EdgeInsets.all(24),
-      tint: accent.withValues(alpha: 0.05),
-      borderColor: accent.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -260,15 +273,14 @@ class ResultScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
-                  color: AppTheme.vicksBlue,
-                  fontFeatures: AppTheme.tabularFigures,
+                  color: AppTheme.vaprupBlue,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 '%',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+                  color: AppTheme.vaprupBlue.withAlpha((0.5 * 255).round()),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -279,7 +291,7 @@ class ResultScreen extends StatelessWidget {
             'Association Confidence: ${result.diseaseAssociation.confidence}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.vicksBlue.withValues(alpha: 0.6),
+              color: AppTheme.vaprupBlue.withAlpha((0.6 * 255).round()),
             ),
           ),
           const SizedBox(height: 18),
@@ -287,7 +299,9 @@ class ResultScreen extends StatelessWidget {
             value: result.probability.clamp(0, 1),
             minHeight: 8,
             borderRadius: BorderRadius.circular(999),
-            backgroundColor: AppTheme.frostDeep.withValues(alpha: 0.5),
+            backgroundColor: AppTheme.vaprupMint.withAlpha(
+              (0.5 * 255).round(),
+            ), // AppTheme.frostDeep
             color: accent,
           ),
         ],
@@ -296,9 +310,10 @@ class ResultScreen extends StatelessWidget {
   }
 
   Widget _buildScorePanel(BuildContext context) {
-    final Color riskColor = _riskColor(result.riskScore);
+    final Color riskColor = _riskColor(context, result.riskScore);
 
     return ModernGlassCard(
+      // Will be GlassmorphicContainer in Task 4
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,9 +342,8 @@ class ResultScreen extends StatelessWidget {
                                   ?.copyWith(
                                     fontSize: 48,
                                     fontWeight: FontWeight.w800,
-                                    color: AppTheme.vicksBlue,
+                                    color: AppTheme.vaprupBlue,
                                     height: 1.0,
-                                    fontFeatures: AppTheme.tabularFigures,
                                   ),
                             ),
                             const SizedBox(height: 4),
@@ -357,7 +371,7 @@ class ResultScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: AppTheme.vicksBlue,
+              color: AppTheme.vaprupBlue,
             ),
           ),
         ],
@@ -368,8 +382,8 @@ class ResultScreen extends StatelessWidget {
   Widget _buildEvidenceGrid(BuildContext context) {
     final List<dynamic> anomalies =
         (result.details['detected_anomalies'] as List<dynamic>?) ?? <dynamic>[];
-
     return ModernGlassCard(
+      // Will be GlassmorphicContainer in Task 4
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +400,7 @@ class ResultScreen extends StatelessWidget {
                   title: 'Pattern',
                   value: result.diseaseAssociation.condition,
                   icon: LucideIcons.fingerprint,
-                  accent: AppTheme.mentholCyan,
+                  accent: AppTheme.vaprupTeal, // AppTheme.mentholCyan
                 ),
                 const Divider(height: 24),
                 _evidenceRow(
@@ -394,7 +408,7 @@ class ResultScreen extends StatelessWidget {
                   title: 'Model',
                   value: result.classification,
                   icon: LucideIcons.cpu,
-                  accent: AppTheme.clinicalAmber,
+                  accent: AppTheme.warningAmber, // AppTheme.clinicalAmber
                 ),
                 const Divider(height: 24),
                 _evidenceRow(
@@ -402,7 +416,7 @@ class ResultScreen extends StatelessWidget {
                   title: 'Markers',
                   value: anomalies.isEmpty ? 'None' : anomalies.join(', '),
                   icon: LucideIcons.alertTriangle,
-                  accent: AppTheme.oxide,
+                  accent: AppTheme.alertCoral, // AppTheme.oxide
                 ),
               ],
             ),
@@ -425,7 +439,7 @@ class ResultScreen extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.1),
+            color: accent.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: accent),
@@ -439,7 +453,7 @@ class ResultScreen extends StatelessWidget {
                 title,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontSize: 9,
-                  color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+                  color: AppTheme.vaprupBlue.withAlpha((0.5 * 255).round()),
                 ),
               ),
               Text(
@@ -448,7 +462,7 @@ class ResultScreen extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontSize: 13,
-                  color: AppTheme.vicksBlue,
+                  color: AppTheme.vaprupBlue,
                 ),
               ),
             ],
@@ -460,6 +474,7 @@ class ResultScreen extends StatelessWidget {
 
   Widget _buildRecommendationPanel(BuildContext context) {
     return ModernGlassCard(
+      // Will be GlassmorphicContainer in Task 4
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,7 +523,7 @@ class ResultScreen extends StatelessWidget {
           child: Icon(
             icon,
             size: 14,
-            color: AppTheme.vicksBlue.withValues(alpha: 0.4),
+            color: AppTheme.vaprupBlue.withAlpha((0.4 * 255).round()),
           ),
         ),
         const SizedBox(width: 10),
@@ -517,7 +532,7 @@ class ResultScreen extends StatelessWidget {
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontSize: 11,
-              color: AppTheme.vicksBlue.withValues(alpha: 0.7),
+              color: AppTheme.vaprupBlue.withAlpha((0.7 * 255).round()),
             ),
           ),
         ),
@@ -529,7 +544,7 @@ class ResultScreen extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: AppTheme.vicksBlue.withValues(alpha: 0.5),
+        color: AppTheme.vaprupBlue.withAlpha((0.5 * 255).round()),
         letterSpacing: 1.1,
       ),
     );
@@ -561,14 +576,14 @@ class ResultScreen extends StatelessWidget {
     return 'Low';
   }
 
-  Color _riskColor(double score) {
+  Color _riskColor(BuildContext context, double score) {
     if (score >= 7) {
-      return AppTheme.oxide;
+      return AppTheme.alertCoral; // AppTheme.oxide
     }
     if (score >= 4) {
-      return AppTheme.clinicalAmber;
+      return AppTheme.warningAmber; // AppTheme.clinicalAmber
     }
-    return AppTheme.success;
+    return Theme.of(context).colorScheme.tertiaryContainer; // AppTheme.success
   }
 }
 
@@ -587,13 +602,15 @@ class _RiskDialPainter extends CustomPainter {
     final Paint track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppTheme.frostDeep;
+      ..color = AppTheme.vaprupMint; // AppTheme.frostDeep
 
     final Paint trackInner = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 20
       ..strokeCap = StrokeCap.round
-      ..color = AppTheme.frostDeep.withValues(alpha: 0.3);
+      ..color = AppTheme.vaprupMint.withAlpha(
+        (0.3 * 255).round(),
+      ); // AppTheme.frostDeep
 
     final Rect rect = Rect.fromCircle(center: center, radius: radius);
     final Rect rectInner = Rect.fromCircle(center: center, radius: radius - 20);
@@ -614,7 +631,7 @@ class _RiskDialPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 24
       ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: 0.15)
+      ..color = color.withAlpha((0.15 * 255).round())
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
     canvas.drawArc(rectInner, math.pi, sweep, false, glow);
@@ -622,10 +639,10 @@ class _RiskDialPainter extends CustomPainter {
 
     // Precision Ticks
     final Paint majorTick = Paint()
-      ..color = AppTheme.vicksBlue.withValues(alpha: 0.4)
+      ..color = AppTheme.vaprupBlue.withAlpha((0.4 * 255).round())
       ..strokeWidth = 1.2;
     final Paint minorTick = Paint()
-      ..color = AppTheme.vicksBlue.withValues(alpha: 0.15)
+      ..color = AppTheme.vaprupBlue.withAlpha((0.15 * 255).round())
       ..strokeWidth = 0.8;
 
     for (int index = 0; index <= 40; index++) {
@@ -644,7 +661,7 @@ class _RiskDialPainter extends CustomPainter {
 
     // Needle
     final Paint needlePaint = Paint()
-      ..color = AppTheme.vicksBlue
+      ..color = AppTheme.vaprupBlue
       ..style = PaintingStyle.fill;
 
     final double needleAngle = math.pi + sweep;
