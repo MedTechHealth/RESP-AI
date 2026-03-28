@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:record/record.dart';
+import 'package:responsive_framework/responsive_framework.dart'; // Import ResponsiveFramework
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/analysis_result.dart';
@@ -276,14 +277,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: AppTheme.glass.withValues(alpha: 0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withAlpha((0.8 * 255).round()),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.glassBorder, width: 0.5),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withAlpha((0.5 * 255).round()),
+              width: 0.5,
+            ),
           ),
-          child: const Icon(
+          child: Icon(
             LucideIcons.stethoscope,
             size: 20,
-            color: AppTheme.slate,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(width: 14),
@@ -298,7 +306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: GoogleFonts.fraunces(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.slate,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -309,7 +317,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontSize: 9,
                     letterSpacing: 1.2,
-                    color: AppTheme.slateMuted,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
                   ),
                 ),
             ],
@@ -329,7 +339,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           label: Text(
             'RESET SESSION',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppTheme.slate,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 11,
             ),
           ),
@@ -375,7 +385,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   'Respiratory Capture',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontSize: 28,
-                    color: AppTheme.slate,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -470,7 +480,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: 'SIGNAL',
               value: state.isRecording ? 'STREAMING' : 'IDLE',
               icon: LucideIcons.activity,
-              accent: state.isRecording ? AppTheme.oxide : AppTheme.mentholCyan,
+              accent: state.isRecording
+                  ? AppTheme.alertCoral
+                  : AppTheme.vaprupTeal,
             ),
           ),
         ),
@@ -484,7 +496,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: 'LATENCY',
               value: '< 120ms',
               icon: LucideIcons.zap,
-              accent: AppTheme.mentholCyan,
+              accent: AppTheme.vaprupTeal,
             ),
           ),
         ),
@@ -521,7 +533,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.respiratoryTeal,
+                      backgroundColor: AppTheme.vaprupTeal,
                       minimumSize: const Size.fromHeight(56),
                     ),
                     onPressed: state.isAnalyzing
@@ -562,8 +574,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           style: GoogleFonts.dmSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.slate,
-            fontFeatures: AppTheme.tabularFigures,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -579,8 +590,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     bool isComplete = false,
   }) {
     final Color accent = isActive
-        ? AppTheme.respiratoryTeal
-        : (isComplete ? AppTheme.success : AppTheme.slateMuted);
+        ? AppTheme.vaprupTeal
+        : (isComplete
+              ? Theme.of(context).colorScheme.tertiaryContainer
+              : Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((0.5 * 255).round()));
 
     return Row(
       children: <Widget>[
@@ -594,7 +609,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             border: Border.all(color: accent.withValues(alpha: 0.2), width: 1),
           ),
           child: isComplete
-              ? const Icon(LucideIcons.check, size: 18, color: AppTheme.success)
+              ? Icon(
+                  LucideIcons.check,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
+                )
               : Text(
                   index,
                   style: GoogleFonts.dmSans(
@@ -612,7 +631,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: isActive ? AppTheme.slate : AppTheme.slateMuted,
+                  color: isActive
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
                 ),
               ),
               const SizedBox(height: 2),
@@ -620,7 +643,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 body,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontSize: 11,
-                  color: AppTheme.slateMuted,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
                 ),
               ),
             ],
@@ -634,7 +659,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: AppTheme.slateMuted,
+        color: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
         letterSpacing: 1.2,
       ),
     );
@@ -642,18 +669,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildStatusPanel(BuildContext context, RecordingState state) {
     final Color accent = state.isRecording
-        ? AppTheme.oxide
+        ? AppTheme.alertCoral
         : state.isAnalyzing
-        ? AppTheme.gold
-        : AppTheme.respiratoryTeal;
+        ? AppTheme.warningAmber
+        : AppTheme.vaprupTeal;
 
     final String message =
         state.statusMessage ?? 'Ready for respiratory capture.';
 
     return ModernGlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      tint: accent.withValues(alpha: 0.08),
-      borderColor: accent.withValues(alpha: 0.2),
+      // tint: accent.withValues(alpha: 0.08), // Commented out
+      // borderColor: accent.withValues(alpha: 0.2), // Commented out
       child: Row(
         children: <Widget>[
           Container(
@@ -669,15 +696,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 fontWeight: FontWeight.w700,
                 fontSize: 10,
                 letterSpacing: 0.8,
-                color: AppTheme.slate,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
           if (state.recordedFilePath != null)
-            const Icon(
+            Icon(
               LucideIcons.checkCircle,
               size: 14,
-              color: AppTheme.success,
+              color: Theme.of(context).colorScheme.tertiaryContainer,
             ),
         ],
       ),

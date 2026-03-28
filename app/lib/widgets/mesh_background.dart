@@ -1,13 +1,12 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // For potential future subtle animation additions
 
 import '../theme/app_theme.dart';
 
 class MeshBackground extends StatefulWidget {
-  const MeshBackground({super.key, required this.child});
-
   final Widget child;
+
+  const MeshBackground({super.key, required this.child});
 
   @override
   State<MeshBackground> createState() => _MeshBackgroundState();
@@ -22,8 +21,8 @@ class _MeshBackgroundState extends State<MeshBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat();
+      duration: const Duration(seconds: 20), // Slower, more subtle animation
+    )..repeat(reverse: true);
   }
 
   @override
@@ -34,127 +33,122 @@ class _MeshBackgroundState extends State<MeshBackground>
 
   @override
   Widget build(BuildContext context) {
+    // Determine the base background color from the current theme
+    final Color baseBackgroundColor = Theme.of(
+      context,
+    ).colorScheme.background; // Should be vaprupMint in Vaprup theme
+
     return Stack(
       children: <Widget>[
-        Positioned.fill(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (BuildContext context, Widget? child) {
-              return CustomPaint(
-                painter: _EditorialBackgroundPainter(
-                  progress: _controller.value,
+        // Base background color
+        Container(color: baseBackgroundColor),
+
+        // Subtle Animated Gradient Blobs (mimicking gentle breath)
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (BuildContext context, Widget? child) {
+            final double scale =
+                1.0 + (_controller.value * 0.05); // Very subtle scale
+            final double opacity1 = (0.2 + _controller.value * 0.1).clamp(
+              0.2,
+              0.3,
+            ); // Gentle opacity pulse
+            final double opacity2 = (0.1 + (1 - _controller.value) * 0.1).clamp(
+              0.1,
+              0.2,
+            );
+
+            return Stack(
+              children: <Widget>[
+                Positioned(
+                  top: -size.height * 0.1,
+                  left: -size.width * 0.15,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: size.width * 0.6,
+                      height: size.width * 0.6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: <Color>[
+                            AppTheme.vaprupTeal.withAlpha(
+                              (opacity1 * 255).round(),
+                            ),
+                            baseBackgroundColor.withAlpha(0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              );
-            },
-          ),
+                Positioned(
+                  bottom: -size.height * 0.15,
+                  right: -size.width * 0.2,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: size.width * 0.7,
+                      height: size.width * 0.7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: <Color>[
+                            AppTheme.vaprupBlue.withAlpha(
+                              (opacity2 * 255).round(),
+                            ),
+                            baseBackgroundColor.withAlpha(0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: <Color>[
-                  AppTheme.frost.withValues(alpha: 0.88),
-                  AppTheme.frost.withValues(alpha: 0.92),
-                ],
-              ),
-            ),
-          ),
-        ),
+
+        // Optional: Very subtle grid or pattern overlay (low opacity)
+        // Opacity(
+        //   opacity: 0.01, // Extremely low opacity for barely perceptible effect
+        //   child: CustomPaint(
+        //     painter: _GridPainter(color: Theme.of(context).colorScheme.onBackground),
+        //     child: Container(),
+        //   ),
+        // ),
+
+        // Child content over everything
         widget.child,
       ],
     );
   }
 }
 
-class _EditorialBackgroundPainter extends CustomPainter {
-  const _EditorialBackgroundPainter({required this.progress});
+// Optional: If a grid painter is needed, simplify it or remove if not minimalist enough
+// class _GridPainter extends CustomPainter {
+//   final Color color;
 
-  final double progress;
+//   _GridPainter({required this.color});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Rect rect = Offset.zero & size;
-    final Paint fill = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.55, -0.65),
-        radius: 1.15,
-        colors: <Color>[
-          AppTheme.goldSoft.withValues(alpha: 0.65),
-          AppTheme.frost.withValues(alpha: 0.1),
-          Colors.transparent,
-        ],
-      ).createShader(rect);
-    canvas.drawRect(rect, fill);
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final Paint paint = Paint()
+//       ..color = color
+//       ..strokeWidth = 0.5 // Thinner lines
+//       ..style = PaintingStyle.stroke;
 
-    final Paint secondary = Paint()
-      ..shader = RadialGradient(
-        center: Alignment(
-          0.75,
-          -0.25 + math.sin(progress * math.pi * 2) * 0.06,
-        ),
-        radius: 0.95,
-        colors: <Color>[
-          AppTheme.respiratoryTealSoft.withValues(alpha: 0.55),
-          Colors.transparent,
-        ],
-      ).createShader(rect);
-    canvas.drawRect(rect, secondary);
+//     const double spacing = 60.0; // Larger spacing for subtlety
 
-    final Paint contourPaint = Paint()
-      ..color = AppTheme.glassBorder.withValues(alpha: 0.28)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+//     for (double i = 0; i < size.width; i += spacing) {
+//       canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+//     }
 
-    final Offset center = Offset(size.width * 0.78, size.height * 0.22);
-    for (int index = 0; index < 7; index++) {
-      final double radius = size.shortestSide * (0.24 + index * 0.085);
-      canvas.drawOval(
-        Rect.fromCenter(center: center, width: radius * 1.8, height: radius),
-        contourPaint,
-      );
-    }
+//     for (double i = 0; i < size.height; i += spacing) {
+//       canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+//     }
+//   }
 
-    final Paint wavePaint = Paint()
-      ..color = AppTheme.slate.withValues(alpha: 0.08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
-
-    for (int line = 0; line < 4; line++) {
-      final Path path = Path();
-      final double startY = size.height * (0.66 + line * 0.05);
-      path.moveTo(-40, startY);
-      for (double x = -40; x <= size.width + 40; x += 8) {
-        final double y =
-            startY +
-            math.sin(
-                  (x / size.width) * math.pi * 3 +
-                      progress * math.pi * 2 +
-                      line,
-                ) *
-                (8 + line * 2);
-        path.lineTo(x, y);
-      }
-      canvas.drawPath(path, wavePaint);
-    }
-
-    final Paint markerPaint = Paint()
-      ..color = AppTheme.slate.withValues(alpha: 0.09);
-    canvas.drawCircle(
-      Offset(size.width * 0.18, size.height * 0.17),
-      72,
-      markerPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.2, size.height * 0.18),
-      58,
-      Paint()..color = AppTheme.frost.withValues(alpha: 0.9),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _EditorialBackgroundPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
-}
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// }
