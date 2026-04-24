@@ -1,30 +1,67 @@
-# Resp-AI 🫁
+<div align="center">
+  <br/>
+  <br/>
 
-**Acoustic Respiratory Risk Assessment System using Real-time Deep Learning Streaming**
+  <h1 align="center" style="font-size: 3rem; font-weight: 800; letter-spacing: 2px;">
+    R E S P &nbsp;&nbsp;&nbsp; A I
+  </h1>
+  
+  <p align="center" style="font-size: 1.2rem; color: #555; text-transform: uppercase; letter-spacing: 1px;">
+    <strong>Real-Time Acoustic Respiratory Risk Assessment</strong>
+  </p>
 
----
+  <p align="center" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto; color: #666;">
+    An end-to-end artificial intelligence system designed to analyze respiratory audio signals and estimate health risk in real-time via continuous deep learning streaming.
+  </p>
 
-## 1. Project Overview
+  <br />
 
-Resp-AI is an end-to-end artificial intelligence system designed to **analyze respiratory audio signals** (lung sounds) and estimate **respiratory health risk** in real-time. By utilizing a high-performance Python backend and a responsive Flutter frontend, Resp-AI provides immediate feedback on respiratory health.
+  <p align="center">
+    <a href="#architecture" style="text-decoration: none; color: inherit;"><b>ARCHITECTURE</b></a> &nbsp;&nbsp;&nbsp;︱&nbsp;&nbsp;&nbsp; 
+    <a href="#pipeline" style="text-decoration: none; color: inherit;"><b>PIPELINE</b></a> &nbsp;&nbsp;&nbsp;︱&nbsp;&nbsp;&nbsp; 
+    <a href="#getting-started" style="text-decoration: none; color: inherit;"><b>GETTING STARTED</b></a>
+  </p>
 
-The system identifies abnormal respiratory sound patterns (such as wheezes and crackles) and maps them to an interpretable **risk score** and **disease association**, mimicking a clinical triage workflow.
+  <br/>
+  <br/>
+</div>
 
----
+### ✦ SYSTEM OVERVIEW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 2. Key Features
+<table width="100%" style="border-collapse: separate; border-spacing: 15px; border: none;">
+  <tr style="border: none;">
+    <td width="50%" valign="top" style="border: 1px solid #eaeaea; padding: 24px; border-radius: 12px; background-color: #fafbfc;">
+      <h3 style="margin-top: 0; font-size: 1.4em;">🚀 Real-Time Streaming</h3>
+      <p style="color: #586069; margin-top: -10px;"><i>Zero-Latency Audio Ingestion</i></p>
+      <p>Audio is streamed directly from the microphone to the AI engine via WebSockets, eliminating disk latency and significantly improving inference reliability.</p>
+      <p><code>WebSocket</code> <code>Python Backend</code></p>
+    </td>
+    <td width="50%" valign="top" style="border: 1px solid #eaeaea; padding: 24px; border-radius: 12px; background-color: #fafbfc;">
+      <h3 style="margin-top: 0; font-size: 1.4em;">🏥 Cascade AI Engine</h3>
+      <p style="color: #586069; margin-top: -10px;"><i>Two-Stage Inference Pipeline</i></p>
+      <p>Stage 1 utilizes a CNN for symptom detection (Crackles/Wheezes). Stage 2 maps acoustic embeddings to probable conditions (Asthma, COPD) via an MLP.</p>
+      <p><code>CNN</code> <code>MLP</code> <code>PyTorch</code></p>
+    </td>
+  </tr>
+  <tr style="border: none;">
+    <td width="50%" valign="top" style="border: 1px solid #eaeaea; padding: 24px; border-radius: 12px; background-color: #fafbfc;">
+      <h3 style="margin-top: 0; font-size: 1.4em;">🛡️ Gatekeeper Logic</h3>
+      <p style="color: #586069; margin-top: -10px;"><i>Intelligent Signal Filtering</i></p>
+      <p>Advanced algorithmic filtering prevents misleading disease labels for healthy subjects, ensuring high clinical precision and reducing false positives.</p>
+      <p><code>Signal Processing</code> <code>Log-Mel</code></p>
+    </td>
+    <td width="50%" valign="top" style="border: 1px solid #eaeaea; padding: 24px; border-radius: 12px; background-color: #fafbfc;">
+      <h3 style="margin-top: 0; font-size: 1.4em;">📱 Cross-Platform</h3>
+      <p style="color: #586069; margin-top: -10px;"><i>Universal Deployment</i></p>
+      <p>A highly responsive frontend built with Flutter, offering live visualization and seamless experiences across Android, iOS, and Desktop environments.</p>
+      <p><code>Flutter</code> <code>Dart</code> <code>Riverpod</code></p>
+    </td>
+  </tr>
+</table>
 
-- **🚀 Real-time Streaming:** Audio is streamed directly from the microphone to the AI engine via WebSockets, eliminating disk latency and improving reliability.
-- **🏥 Two-Stage Cascade AI:**
-    - **Stage 1 (Symptom Detection):** Identifies abnormalities (Crackles/Wheezes) and generates a 0-10 Risk Score.
-    - **Stage 2 (Disease Association):** Maps acoustic embeddings to probable conditions (Asthma, COPD, etc.).
-- **🛡️ Gatekeeper Logic:** Intelligent filtering that prevents misleading disease labels for healthy subjects.
-- **📱 Cross-Platform Frontend:** Built with Flutter for a seamless experience on Android, iOS, and Desktop.
-- **📉 Live Visualization:** Real-time feedback during the recording process.
+<br/>
 
----
-
-## 3. System Architecture (High-Level)
+### ✦ ARCHITECTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ```text
 [ Patient Mic ] ──(Raw PCM Stream)──> [ WebSocket Gateway ]
@@ -35,53 +72,50 @@ The system identifies abnormal respiratory sound patterns (such as wheezes and c
       └─ Stage 2: Disease Association (MLP) ──┘
 ```
 
----
+<br/>
 
-## 4. Algorithmic Pipeline
+### ✦ ALGORITHMIC PIPELINE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-### 4.1 Signal Processing
-- **Sampling Rate:** 16kHz Mono (Medical Standard).
-- **Butterworth Band-Pass Filter:** Preserves 50Hz - 2500Hz to focus on medical acoustic features.
-- **Spectral Subtraction:** Reduces stationary background noise for cleaner input.
-- **Feature Extraction:** Generates Log-Mel Spectrograms (40 MFCC coefficients).
+**1. Signal Processing**
+- **Sampling Rate:** `16kHz Mono` (Medical Standard)
+- **Band-Pass Filter:** Butterworth `50Hz - 2500Hz`
+- **Noise Reduction:** Spectral Subtraction for background noise
+- **Feature Extraction:** Log-Mel Spectrograms (`40 MFCC coefficients`)
 
-### 4.2 Deep Learning (CNN)
-- **Architecture:** 3-Layer Convolutional Neural Network with Max Pooling and Dropout.
-- **Training Data:** ICBHI 2017 Challenge Dataset, COSWARA, and Fraiwan Lung Sound Dataset.
-- **Optimization:** Z-Score Normalization and Hamming Windowing for spectral stability.
+**2. Deep Learning (CNN)**
+- **Architecture:** 3-Layer Convolutional Neural Network (Max Pooling, Dropout)
+- **Training Data:** ICBHI 2017 Challenge, COSWARA, Fraiwan Lung Sound Dataset
+- **Optimization:** Z-Score Normalization & Hamming Windowing
 
----
+<br/>
 
-## 5. Getting Started
+### ✦ GETTING STARTED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-### 5.1 Backend (Python)
-1. Navigate to the `backend/` directory.
-2. Install dependencies: `pip install -r requirements.txt`.
-3. Start the server: `python main.py`.
-   - The server will run on `http://127.0.0.1:8000`.
+#### Backend (Python)
+```bash
+cd backend/
+pip install -r requirements.txt
+python main.py  # Server runs on http://127.0.0.1:8000
+```
 
-### 5.2 Frontend (Flutter)
-1. Navigate to the `app/` directory.
-2. Install dependencies: `flutter pub get`.
-3. Run the application: `flutter run`.
+#### Frontend (Flutter)
+```bash
+cd app/
+flutter pub get
+flutter run
+```
 
----
+<br/>
 
-## 6. Ethical & Legal Considerations
+### ✦ ETHICAL CONSIDERATIONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- **NOT A MEDICAL DEVICE:** Resp-AI is a research prototype for screening and educational purposes. It does not provide clinical diagnoses.
-- **Privacy First:** In the current version, audio is processed in-memory and not stored on disk, ensuring maximum patient privacy.
-- **Transparency:** All outputs include a probabilistic disclaimer and advise consultation with a medical professional.
+- **Not a Medical Device:** Prototype for screening and educational purposes.
+- **Privacy First:** Audio processed entirely in-memory; zero disk storage.
+- **Transparency:** All outputs include a probabilistic disclaimer.
 
----
+<br/>
+<br/>
 
-## 7. Future Roadmap
-
-- **Research Vault:** Automatic archiving of anonymized audio for model retraining.
-- **Multi-modal Fusion:** Integrating vitals (Heart Rate, SpO2) into the risk assessment.
-- **On-device Inference:** Porting the CNN models to TensorFlow Lite for offline use.
-
----
-
-© 2026 Resp-AI Project Team
-Engineering & Documentation
+<div align="center">
+  <p style="color: #888;"><i>© 2026 Resp-AI Project Team &middot; Engineering & Documentation</i></p>
+</div>
