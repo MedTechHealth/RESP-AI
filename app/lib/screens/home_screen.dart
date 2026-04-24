@@ -1,24 +1,26 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:ui';
-import 'dart:math' as math;
 import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:record/record.dart';
+import 'package:responsive_framework/responsive_framework.dart'; // Import ResponsiveFramework
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../services/audio_service.dart';
-import '../services/api_service.dart';
-import '../providers/state_providers.dart';
+
 import '../models/analysis_result.dart';
-import '../widgets/modern_glass_card.dart';
-import '../widgets/mesh_background.dart';
+import '../providers/state_providers.dart';
+import '../services/api_service.dart';
+import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/breath_halo_button.dart';
+import '../widgets/mesh_background.dart';
+import '../widgets/modern_glass_card.dart';
 import 'result_screen.dart';
 
-final audioServiceProvider = Provider((ref) => AudioService());
+final audioServiceProvider = Provider<AudioService>((ref) => AudioService());
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -30,14 +32,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _timer;
   WebSocketChannel? _wsChannel;
-  StreamSubscription? _wsSubscription;
-  StreamSubscription? _audioSubscription;
+  StreamSubscription<dynamic>? _wsSubscription;
+  StreamSubscription<List<int>>? _audioSubscription;
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
 
   @override
   void dispose() {
     _timer?.cancel();
     _wsSubscription?.cancel();
     _audioSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
     _wsChannel?.sink.close();
     super.dispose();
   }
@@ -45,8 +49,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startTimer() {
     _timer?.cancel();
     ref.read(recordingProvider.notifier).setDuration(0);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final currentState = ref.read(recordingProvider);
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+      final RecordingState currentState = ref.read(recordingProvider);
       ref
           .read(recordingProvider.notifier)
           .setDuration(currentState.recordingDuration + 1);
@@ -58,15 +62,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _formatDuration(int seconds) {
-    final mins = (seconds / 60).floor().toString().padLeft(2, '0');
-    final secs = (seconds % 60).floor().toString().padLeft(2, '0');
+    final String mins = (seconds / 60).floor().toString().padLeft(2, '0');
+    final String secs = (seconds % 60).floor().toString().padLeft(2, '0');
     return '$mins:$secs';
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['wav', 'mp3'],
+      allowedExtensions: <String>['wav', 'mp3'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -75,79 +79,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .setRecordedFile(result.files.single.path);
       ref
           .read(recordingProvider.notifier)
-          .setStatus('File selected: ${result.files.single.name}');
+          .setStatus('Sample ready: ${result.files.single.name}');
     }
   }
 
-  void _toggleRecording() async {
-    final audioService = ref.read(audioServiceProvider);
-    final recordingState = ref.read(recordingProvider);
-    final notifier = ref.read(recordingProvider.notifier);
+  Future<void> _toggleRecording() async {
+    final AudioService audioService = ref.read(audioServiceProvider);
+    final RecordingState recordingState = ref.read(recordingProvider);
+    final RecordingNotifier notifier = ref.read(recordingProvider.notifier);
 
     if (recordingState.isRecording) {
       _stopTimer();
       notifier.setRecording(false);
       notifier.setAnalyzing(true);
-      notifier.setStatus('Finalizing stream...');
+      notifier.setStatus('Finalizing live respiratory stream...');
       _wsChannel?.sink.add('FINISH');
       await _audioSubscription?.cancel();
+      await _amplitudeSubscription?.cancel();
       await audioService.stopRecording();
-    } else {
-      try {
-        final hasPermission = await audioService.checkPermission();
-        if (hasPermission) {
-          notifier.setStatus(null);
-          _wsChannel = ApiService.connectStreaming();
-          _wsSubscription = _wsChannel!.stream.listen(
-            (message) {
-              final data = jsonDecode(message);
-              if (data['status'] == 'success') {
-                final result = AnalysisResult.fromJson(data);
-                _wsChannel?.sink.close();
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ResultScreen(result: result),
-                    ),
-                  );
-                  notifier.setStatus('Analysis complete');
-                  notifier.setAnalyzing(false);
-                }
-              } else if (data['error'] != null) {
-                notifier.setStatus('Error: ${data['error']}');
-                notifier.setAnalyzing(false);
-                _wsChannel?.sink.close();
-              }
-            },
-            onError: (e) {
-              notifier.setStatus('Stream error: $e');
-              notifier.setAnalyzing(false);
-            },
-          );
+      return;
+    }
 
-          final audioStream = await audioService.startStreaming();
-          _audioSubscription = audioStream.listen((chunk) {
-            _wsChannel?.sink.add(chunk);
-          });
-
-          notifier.setRecording(true);
-          notifier.setStatus('Live Signal Acquisition Active');
-          _startTimer();
-        } else {
-          notifier.setStatus('Microphone access denied');
-        }
-      } catch (e) {
-        notifier.setStatus('Link failure: ${e.toString()}');
-        notifier.setAnalyzing(false);
+    try {
+      final bool hasPermission = await audioService.checkPermission();
+      if (!hasPermission) {
+        notifier.setStatus('Microphone access was denied.');
+        return;
       }
+
+      notifier.setStatus(
+        'Live capture engaged. Listening for respiratory signal...',
+      );
+      _wsChannel = ApiService.connectStreaming();
+      _wsSubscription = _wsChannel!.stream.listen(
+        (dynamic message) {
+          final Map<String, dynamic> data =
+              jsonDecode(message as String) as Map<String, dynamic>;
+          if (data['status'] == 'success') {
+            final AnalysisResult result = AnalysisResult.fromJson(data);
+            _wsChannel?.sink.close();
+            if (!mounted) {
+              return;
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (BuildContext context) => ResultScreen(result: result),
+              ),
+            );
+            notifier.setStatus('Analysis complete.');
+            notifier.setAnalyzing(false);
+          } else if (data['error'] != null) {
+            notifier.setStatus('Analysis error: ${data['error']}');
+            notifier.setAnalyzing(false);
+            _wsChannel?.sink.close();
+          }
+        },
+        onError: (Object error) {
+          notifier.setStatus('Streaming link failure: $error');
+          notifier.setAnalyzing(false);
+        },
+      );
+
+      final Stream<List<int>> audioStream = await audioService.startStreaming();
+      _audioSubscription = audioStream.listen((List<int> chunk) {
+        _wsChannel?.sink.add(chunk);
+      });
+
+      _amplitudeSubscription = audioService.onAmplitudeChanged().listen((amp) {
+        double normalized = (amp.current + 160) / 160;
+        normalized = (normalized * 2.0).clamp(0.0, 1.2);
+        notifier.setAmplitude(normalized);
+      });
+
+      notifier.setRecording(true);
+      notifier.setAnalyzing(false);
+      _startTimer();
+    } catch (error) {
+      notifier.setStatus('Unable to start capture: $error');
+      notifier.setAnalyzing(false);
     }
   }
 
   Future<void> _runAnalysis(String path) async {
-    final notifier = ref.read(recordingProvider.notifier);
+    final RecordingNotifier notifier = ref.read(recordingProvider.notifier);
     notifier.setAnalyzing(true);
-    notifier.setStatus('Analyzing acoustic signature...');
+    notifier.setStatus('Processing uploaded respiratory sample...');
 
     try {
       String cleanPath = path;
@@ -155,560 +172,542 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         cleanPath = Uri.parse(cleanPath).toFilePath();
       }
 
-      final result = await ApiService.analyzeAudio(cleanPath);
+      final AnalysisResult result = await ApiService.analyzeAudio(cleanPath);
 
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ResultScreen(result: result)),
-        );
-        notifier.setStatus('Analysis complete');
+      if (!mounted) {
+        return;
       }
-    } catch (e) {
-      notifier.setStatus('Analysis failed: ${e.toString()}');
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) => ResultScreen(result: result),
+        ),
+      );
+      notifier.setStatus('Analysis complete.');
+    } catch (error) {
+      notifier.setStatus('Analysis failed: $error');
     } finally {
-      if (mounted) notifier.setAnalyzing(false);
+      if (mounted) {
+        notifier.setAnalyzing(false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final recordingState = ref.watch(recordingProvider);
+    final RecordingState recordingState = ref.watch(recordingProvider);
+    final Size size = MediaQuery.sizeOf(context);
+    final bool useWideLayout = size.width >= 1024;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AppBar(
-              backgroundColor: Colors.white.withOpacity(0.5),
-              title: Text(
-                'RESP-AI',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 20,
-                  letterSpacing: 3.0,
-                  color: AppTheme.primaryIndigo,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  tooltip: 'Reset session',
-                  icon: const Icon(
-                    LucideIcons.refreshCw,
-                    size: 18,
-                    color: AppTheme.primaryIndigo,
-                  ),
-                  onPressed: () => ref.read(recordingProvider.notifier).reset(),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-          ),
-        ),
+      appBar: AppBar(
+        toolbarHeight: 80,
+        title: _buildAppBarTitle(context),
+        actions: _buildAppBarActions(context),
       ),
       body: MeshBackground(
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                child: Column(
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 50),
-                    _buildStatusTag(recordingState),
-                    const SizedBox(height: 30),
-                    _buildMainActionArea(recordingState),
-                    const SizedBox(height: 40),
-                    _buildStatusCard(recordingState),
-                    const SizedBox(height: 60),
-                    _buildFooterInfo(),
-                  ],
-                ),
-              ),
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: _clamp(20, 40, size.width),
+              vertical: _clamp(12, 24, size.height),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusTag(RecordingState state) {
-    String text = "READY FOR SIGNAL";
-    Color color = AppTheme.textSecondary;
-    IconData icon = LucideIcons.power;
-
-    if (state.isRecording) {
-      text = "SIGNAL ACQUISITION LIVE";
-      color = AppTheme.errorRose;
-      icon = LucideIcons.activity;
-    } else if (state.isAnalyzing) {
-      text = "COMPUTING BIOMARKERS";
-      color = AppTheme.primaryIndigo;
-      icon = LucideIcons.cpu;
-    } else if (state.recordedFilePath != null) {
-      text = "SIGNAL READY FOR ANALYSIS";
-      color = AppTheme.accentEmerald;
-      icon = LucideIcons.checkCircle;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: color.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16)
-              .animate(
-                onPlay: (c) => state.isRecording || state.isAnalyzing
-                    ? c.repeat(reverse: true)
-                    : null,
-              )
-              .fade(duration: 800.ms, curve: Curves.easeInOut),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().scale(begin: const Offset(0.9, 0.9));
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryIndigo.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.primaryIndigo.withOpacity(0.1)),
-          ),
-          child: const Text(
-            'ACOUSTIC INTELLIGENCE LAB',
-            style: TextStyle(
-              color: AppTheme.primaryIndigo,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ).animate().fadeIn(delay: 100.ms),
-        const SizedBox(height: 32),
-        Text(
-          'Lung Health\nPrecision Screening',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.displayLarge?.copyWith(fontSize: 42, height: 1.0),
-        ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
-        const SizedBox(height: 20),
-        Text(
-          'AI-powered respiratory biomarker detection system. Transforming sound into clinical insights.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontSize: 17,
-            height: 1.5,
-            color: AppTheme.textSecondary,
-          ),
-        ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
-      ],
-    );
-  }
-
-  Widget _buildMainActionArea(RecordingState state) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 800),
-      switchInCurve: Curves.easeOutQuart,
-      switchOutCurve: Curves.easeInQuart,
-      child: Column(
-        key: ValueKey('${state.recordedFilePath != null}-${state.isRecording}'),
-        children: [
-          if (state.recordedFilePath == null || state.isRecording)
-            _buildInteractiveMicrophone(state)
-          else
-            _buildBentoAnalysisPanel(state),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInteractiveMicrophone(RecordingState state) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: !state.isAnalyzing ? _toggleRecording : null,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color:
-                          (state.isRecording
-                                  ? AppTheme.errorRose
-                                  : AppTheme.primaryIndigo)
-                              .withOpacity(0.02),
-                      border: Border.all(
-                        color:
-                            (state.isRecording
-                                    ? AppTheme.errorRose
-                                    : AppTheme.primaryIndigo)
-                                .withOpacity(0.05),
-                        width: 2,
-                      ),
-                    ),
-                  )
-                  .animate(onPlay: (c) => state.isRecording ? c.repeat() : null)
-                  .scale(
-                    begin: const Offset(0.9, 0.9),
-                    end: const Offset(1.1, 1.1),
-                    duration: 2000.ms,
-                    curve: Curves.easeInOut,
-                  ),
-              ModernGlassCard(
-                    borderRadius: 110,
-                    padding: EdgeInsets.zero,
-                    opacity: 0.7,
-                    blur: 40,
-                    child: Container(
-                      width: 160,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: state.isRecording
-                              ? [AppTheme.errorRose, const Color(0xFF9F1239)]
-                              : [
-                                  AppTheme.primaryIndigo,
-                                  const Color(0xFF3730A3),
-                                ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (state.isRecording
-                                        ? AppTheme.errorRose
-                                        : AppTheme.primaryIndigo)
-                                    .withOpacity(0.3),
-                            blurRadius: 40,
-                            offset: const Offset(0, 15),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1600),
+                child: useWideLayout
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          // Stage (60%)
+                          Expanded(
+                            flex: 6,
+                            child: _buildStage(context, recordingState),
+                          ),
+                          SizedBox(width: _clamp(20, 40, size.width)),
+                          // Bento Side-Rail (40%)
+                          Expanded(
+                            flex: 4,
+                            child: _buildBentoRail(context, recordingState),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: <Widget>[
+                          Expanded(
+                            flex: 6,
+                            child: _buildStage(
+                              context,
+                              recordingState,
+                              isMobile: true,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            flex: 5,
+                            child: _buildBentoRail(
+                              context,
+                              recordingState,
+                              isMobile: true,
+                            ),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        state.isRecording
-                            ? LucideIcons.square
-                            : LucideIcons.mic,
-                        size: 54,
-                        color: Colors.white,
-                      ),
-                    ),
-                  )
-                  .animate(target: state.isRecording ? 1 : 0)
-                  .shimmer(duration: 3.seconds, color: Colors.white24),
-              if (state.isRecording)
-                Positioned(
-                  bottom: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      _formatDuration(state.recordingDuration),
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ).animate().scale().fadeIn(),
-                ),
-            ],
-          ),
-        ),
-        if (state.isRecording) ...[
-          const SizedBox(height: 60),
-          _buildAcousticViz(),
-        ],
-        if (!state.isRecording &&
-            !state.isAnalyzing &&
-            state.recordedFilePath == null) ...[
-          const SizedBox(height: 60),
-          _buildDropZonePrompt(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDropZonePrompt() {
-    return InkWell(
-      onTap: _pickFile,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.borderMedium, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              LucideIcons.uploadCloud,
-              color: AppTheme.primaryIndigo,
-              size: 28,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'IMPORT SIGNAL FILE',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppTheme.primaryIndigo,
-                letterSpacing: 2.0,
               ),
             ),
-          ],
-        ),
-      ).animate().fadeIn(delay: 600.ms),
-    );
-  }
-
-  Widget _buildAcousticViz() {
-    return SizedBox(
-      height: 50,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          20,
-          (index) =>
-              Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: 5,
-                    height: 10 + (math.Random().nextDouble() * 40),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorRose.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  )
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scaleY(
-                    begin: 0.2,
-                    end: 1.8,
-                    duration: (500 + math.Random().nextInt(800)).ms,
-                    curve: Curves.easeInOut,
-                  ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBentoAnalysisPanel(RecordingState state) {
+  double _clamp(double min, double max, double screenDim) {
+    return (screenDim / 100).clamp(min, max);
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    final bool useWideLayout = MediaQuery.sizeOf(context).width >= 1024;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withAlpha((0.8 * 255).round()),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withAlpha((0.5 * 255).round()),
+              width: 0.5,
+            ),
+          ),
+          child: Icon(
+            LucideIcons.stethoscope,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                'RESP-AI',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.fraunces(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              if (useWideLayout)
+                Text(
+                  'INSTRUMENT DASHBOARD',
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildAppBarActions(BuildContext context) {
+    return <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(right: 24),
+        child: TextButton.icon(
+          onPressed: () => ref.read(recordingProvider.notifier).reset(),
+          icon: const Icon(LucideIcons.refreshCw, size: 14),
+          label: Text(
+            'RESET SESSION',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildStage(
+    BuildContext context,
+    RecordingState state, {
+    bool isMobile = false,
+  }) {
+    return _buildStageCard(context, state);
+  }
+
+  Widget _buildStageCard(BuildContext context, RecordingState state) {
     return ModernGlassCard(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentEmerald.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  LucideIcons.activity,
-                  color: AppTheme.accentEmerald,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'STATIONARY SIGNAL READY',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.accentEmerald,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      state.recordedFilePath!.split('/').last,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(fontSize: 18),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(LucideIcons.x, color: AppTheme.textTertiary),
-                onPressed: () => ref.read(recordingProvider.notifier).reset(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: state.isAnalyzing
-                ? null
-                : () => _runAnalysis(state.recordedFilePath!),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 72),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+      padding: const EdgeInsets.all(0),
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          RepaintBoundary(
+            child: Center(
+              child: BreathHaloButton(
+                isRecording: state.isRecording,
+                isAnalyzing: state.isAnalyzing,
+                amplitude: state.amplitude,
+                durationLabel: _formatDuration(state.recordingDuration),
+                onPressed: _toggleRecording,
               ),
             ),
-            child: state.isAnalyzing
-                ? const SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 3,
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('START AI DIAGNOSTICS'),
-                      SizedBox(width: 16),
-                      Icon(LucideIcons.arrowRight, size: 20),
-                    ],
+          ),
+          Positioned(
+            top: 32,
+            left: 32,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _buildEyebrow(context, 'Primary Instrument'),
+                const SizedBox(height: 8),
+                Text(
+                  'Respiratory Capture',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontSize: 28,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().moveY(begin: 30, end: 0);
-  }
-
-  Widget _buildStatusCard(RecordingState state) {
-    if (state.statusMessage == null) return const SizedBox.shrink();
-    final isError =
-        state.statusMessage!.toLowerCase().contains('error') ||
-        state.statusMessage!.toLowerCase().contains('failed');
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 500),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: isError
-            ? AppTheme.errorRose.withOpacity(0.05)
-            : Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isError
-              ? AppTheme.errorRose.withOpacity(0.2)
-              : AppTheme.borderMedium,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (state.isAnalyzing)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppTheme.primaryIndigo,
-              ),
-            ),
-          if (state.isAnalyzing) const SizedBox(width: 16),
-          Flexible(
-            child: Text(
-              state.statusMessage!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isError ? AppTheme.errorRose : AppTheme.textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
+                ),
+              ],
             ),
           ),
+          Positioned(
+            bottom: 32,
+            left: 32,
+            right: 32,
+            child: _buildStatusPanel(context, state),
+          ),
         ],
       ),
-    ).animate(key: ValueKey(state.statusMessage)).fadeIn().slideY(begin: 0.1);
+    );
   }
 
-  Widget _buildFooterInfo() {
+  Widget _buildBentoRail(
+    BuildContext context,
+    RecordingState state, {
+    bool isMobile = false,
+  }) {
     return Column(
-      children: [
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              LucideIcons.shieldCheck,
-              color: AppTheme.textTertiary,
-              size: 16,
+      children: <Widget>[
+        Expanded(flex: 5, child: _buildClinicalProtocolCard(context, state)),
+        const SizedBox(height: 16),
+        Expanded(flex: 4, child: _buildTelemetryGrid(context, state)),
+        const SizedBox(height: 16),
+        Expanded(flex: 3, child: _buildSampleManagementCard(context, state)),
+      ],
+    );
+  }
+
+  Widget _buildClinicalProtocolCard(
+    BuildContext context,
+    RecordingState state,
+  ) {
+    return ModernGlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _buildEyebrow(context, 'Clinical Protocol'),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                _buildStep(
+                  context,
+                  index: '01',
+                  title: 'Auscultation',
+                  body: 'Engage capture for 10-15s breath cycle.',
+                  isActive:
+                      !state.isRecording && state.recordedFilePath == null,
+                  isComplete:
+                      state.recordedFilePath != null || state.isRecording,
+                ),
+                _buildStep(
+                  context,
+                  index: '02',
+                  title: 'AI Synthesis',
+                  body: 'Neural feature extraction & review.',
+                  isActive: state.isAnalyzing,
+                  isComplete: false,
+                ),
+                _buildStep(
+                  context,
+                  index: '03',
+                  title: 'Risk Scoring',
+                  body: 'Clinical narrative generation.',
+                  isActive: false,
+                  isComplete: false,
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Text(
-              'ADVANCED SIGNAL ENCRYPTION ACTIVE',
-              style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTelemetryGrid(BuildContext context, RecordingState state) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          flex: 3,
+          child: ModernGlassCard(
+            padding: const EdgeInsets.all(20),
+            child: _buildTelemetryTile(
+              context,
+              label: 'SIGNAL',
+              value: state.isRecording ? 'STREAMING' : 'IDLE',
+              icon: LucideIcons.activity,
+              accent: state.isRecording
+                  ? AppTheme.alertCoral
+                  : AppTheme.vaprupTeal,
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 24),
-        Text(
-          'Experimental medical device. Not intended for self-diagnosis. Acoustic patterns are analyzed via temporal deep neural networks.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontSize: 12,
-            color: AppTheme.textTertiary,
-            height: 1.6,
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 2,
+          child: ModernGlassCard(
+            padding: const EdgeInsets.all(20),
+            child: _buildTelemetryTile(
+              context,
+              label: 'LATENCY',
+              value: '< 120ms',
+              icon: LucideIcons.zap,
+              accent: AppTheme.vaprupTeal,
+            ),
           ),
         ),
       ],
-    ).animate().fadeIn(delay: 800.ms);
+    );
+  }
+
+  Widget _buildSampleManagementCard(
+    BuildContext context,
+    RecordingState state,
+  ) {
+    return ModernGlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          _buildEyebrow(context, 'Sample Management'),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                  ),
+                  onPressed: state.isAnalyzing ? null : _pickFile,
+                  icon: const Icon(LucideIcons.upload, size: 18),
+                  label: const Text('IMPORT'),
+                ),
+              ),
+              if (state.recordedFilePath != null &&
+                  !state.isRecording) ...<Widget>[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.vaprupTeal,
+                      minimumSize: const Size.fromHeight(56),
+                    ),
+                    onPressed: state.isAnalyzing
+                        ? null
+                        : () => _runAnalysis(state.recordedFilePath!),
+                    icon: const Icon(LucideIcons.play, size: 18),
+                    label: const Text('ANALYZE'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTelemetryTile(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color accent,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            _buildEyebrow(context, label),
+            Icon(icon, size: 14, color: accent),
+          ],
+        ),
+        Text(
+          value,
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep(
+    BuildContext context, {
+    required String index,
+    required String title,
+    required String body,
+    bool isActive = false,
+    bool isComplete = false,
+  }) {
+    final Color accent = isActive
+        ? AppTheme.vaprupTeal
+        : (isComplete
+              ? Theme.of(context).colorScheme.tertiaryContainer
+              : Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((0.5 * 255).round()));
+
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent.withValues(alpha: 0.2), width: 1),
+          ),
+          child: isComplete
+              ? Icon(
+                  LucideIcons.check,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
+                )
+              : Text(
+                  index,
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isActive
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                body,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEyebrow(BuildContext context, String text) {
+    return Text(
+      text.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((0.5 * 255).round()),
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildStatusPanel(BuildContext context, RecordingState state) {
+    final Color accent = state.isRecording
+        ? AppTheme.alertCoral
+        : state.isAnalyzing
+        ? AppTheme.warningAmber
+        : AppTheme.vaprupTeal;
+
+    final String message =
+        state.statusMessage ?? 'Ready for respiratory capture.';
+
+    return ModernGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      // tint: accent.withValues(alpha: 0.08), // Commented out
+      // borderColor: accent.withValues(alpha: 0.2), // Commented out
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              message.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.8,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          if (state.recordedFilePath != null)
+            Icon(
+              LucideIcons.checkCircle,
+              size: 14,
+              color: Theme.of(context).colorScheme.tertiaryContainer,
+            ),
+        ],
+      ),
+    );
   }
 }

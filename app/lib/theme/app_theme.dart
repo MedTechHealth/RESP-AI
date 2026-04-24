@@ -2,137 +2,237 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors - Premium Medical Tech Palette
-  // Using more sophisticated shades
-  static const primaryIndigo = Color(0xFF4F46E5); // Indigo 600
-  static const primaryBlue = Color(0xFF2563EB); // Blue 600
-  static const accentCyan = Color(0xFF06B6D4); // Cyan 500
-  static const accentEmerald = Color(0xFF059669); // Emerald 600
-  static const warningAmber = Color(0xFFD97706); // Amber 600
-  static const errorRose = Color(0xFFE11D48); // Rose 600
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1200;
 
-  // Backgrounds & Surfaces
-  static const scaffoldBg = Color(0xFFFBFDFF); // Very light blue-white
-  static const cardBg = Colors.white;
-  static const textPrimary = Color(0xFF0F172A); // Slate 900
-  static const textSecondary = Color(0xFF475569); // Slate 600
-  static const textTertiary = Color(0xFF94A3B8); // Slate 400
-  static const borderLight = Color(0xFFF1F5F9); // Slate 100
-  static const borderMedium = Color(0xFFE2E8F0); // Slate 200
+  // Lungs & Respiratory Theme Colors
+  static const Color lungBlue = Color(0xFF0F172A);
+  static const Color oxygenCyan = Color(0xFF06B6D4);
+  static const Color breathTeal = Color(0xFF14B8A6);
+  static const Color alertCoral = Color(0xFFF43F5E);
+  static const Color warningAmber = Color(0xFFF59E0B);
+  static const Color safeGreen = Color(0xFF10B981);
 
-  static ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    primaryColor: primaryIndigo,
-    scaffoldBackgroundColor: scaffoldBg,
-    cardColor: cardBg,
-    colorScheme: ColorScheme.light(
-      primary: primaryIndigo,
-      onPrimary: Colors.white,
-      secondary: accentCyan,
-      onSecondary: Colors.white,
-      surface: cardBg,
-      onSurface: textPrimary,
-      error: errorRose,
-      onError: Colors.white,
-      outline: borderMedium,
-      surfaceContainerHighest: Color(0xFFF8FAFC),
-    ),
+  static const Color backgroundLight = Color(0xFFF8FAFC);
+  static const Color backgroundDark = Color(0xFF0B0F19);
 
-    // Modern Typography
-    textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-      displayLarge: GoogleFonts.plusJakartaSans(
-        color: textPrimary,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -1.5,
-        height: 1.1,
-      ),
-      displayMedium: GoogleFonts.plusJakartaSans(
-        color: textPrimary,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -1.0,
-      ),
-      headlineMedium: GoogleFonts.plusJakartaSans(
-        color: textPrimary,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.5,
-      ),
-      titleLarge: GoogleFonts.plusJakartaSans(
-        color: textPrimary,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.2,
-      ),
-      bodyLarge: GoogleFonts.plusJakartaSans(
-        color: textPrimary,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
-      bodyMedium: GoogleFonts.plusJakartaSans(
-        color: textSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      labelSmall: GoogleFonts.plusJakartaSans(
-        color: textTertiary,
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.0,
-      ),
-    ),
+  static const Color surfaceLight = Colors.white;
+  static const Color surfaceDark = Color(0xFF1E293B);
 
-    // Component Themes
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      centerTitle: true,
-      iconTheme: IconThemeData(color: textPrimary, size: 24),
-      titleTextStyle: TextStyle(
-        color: textPrimary,
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.5,
-      ),
-    ),
+  // Vicks Vaprup Inspired Colors
+  static const Color vaprupMint = Color(0xFFD9F4F4); // Light, cool background
+  static const Color vaprupTeal = Color(0xFF00C0A4); // Primary green
+  static const Color vaprupBlue = Color(0xFF007BFF); // Primary blue
+  static const Color vaprupDarkText = Color(
+    0xFF2C3E50,
+  ); // Dark text for light themes
+  static const Color vaprupLightText = Color(
+    0xFFECF0F1,
+  ); // Light text for dark themes
+  static const Color vaprupAccent = Color(0xFF1ABC9C); // Accent color
 
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryIndigo,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        shadowColor: primaryIndigo.withOpacity(0.4),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 16,
-          letterSpacing: 0.5,
+  static const LinearGradient primaryVaprupGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [vaprupBlue, vaprupTeal],
+  );
+
+  // Spacing Scale
+  static const double spaceXs = 8.0;
+  static const double spaceSm = 16.0;
+  static const double spaceMd = 24.0;
+  static const double spaceLg = 32.0;
+  static const double spaceXl = 48.0;
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: oxygenCyan,
+        secondary: breathTeal,
+        surface: surfaceLight,
+        error: alertCoral,
+        onPrimary: Colors.white,
+        onSurface: lungBlue,
+      ),
+      scaffoldBackgroundColor: backgroundLight,
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.spaceGrotesk(
+          color: lungBlue,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: GoogleFonts.spaceGrotesk(
+          color: lungBlue,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: GoogleFonts.spaceGrotesk(
+          color: lungBlue,
+          fontWeight: FontWeight.w600,
         ),
       ),
-    ),
-
-    cardTheme: CardThemeData(
-      color: cardBg,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: const BorderSide(color: borderLight, width: 1.5),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: lungBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
-    ),
-  );
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: lungBlue,
+          side: const BorderSide(color: lungBlue, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
 
-  // Keep darkTheme for compatibility but updated to modern standards
-  static ThemeData darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    primaryColor: primaryIndigo,
-    scaffoldBackgroundColor: const Color(0xFF0F172A),
-    cardColor: const Color(0xFF1E293B),
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryIndigo,
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
       brightness: Brightness.dark,
-    ),
-    textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme),
-  );
+      colorScheme: const ColorScheme.dark(
+        primary: oxygenCyan,
+        secondary: breathTeal,
+        surface: surfaceDark,
+        error: alertCoral,
+        onPrimary: lungBlue,
+        onSurface: Colors.white,
+      ),
+      scaffoldBackgroundColor: backgroundDark,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
+          .copyWith(
+            displayLarge: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+            displayMedium: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+            titleLarge: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: oxygenCyan,
+          foregroundColor: lungBlue,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Colors.white, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get vaprupTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: vaprupBlue,
+        secondary: vaprupTeal,
+        surface: vaprupMint,
+        error: alertCoral, // Reusing existing error color
+        onPrimary: Colors.white,
+        onSurface: vaprupDarkText,
+        onError: alertCoral,
+        tertiary: warningAmber, // Using tertiary for warning
+        tertiaryContainer: safeGreen, // Using tertiaryContainer for success
+        onSecondary: vaprupDarkText,
+        onBackground: vaprupDarkText,
+        onSurfaceVariant: vaprupLightText,
+        surfaceVariant: vaprupMint,
+        outline: vaprupBlue,
+        shadow: Colors.black12,
+        inversePrimary: vaprupTeal,
+        inverseSurface: vaprupBlue,
+      ),
+      scaffoldBackgroundColor: vaprupMint,
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.spaceGrotesk(
+          color: vaprupDarkText,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: GoogleFonts.spaceGrotesk(
+          color: vaprupDarkText,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: GoogleFonts.spaceGrotesk(
+          color: vaprupDarkText,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: GoogleFonts.inter(color: vaprupDarkText),
+        bodyMedium: GoogleFonts.inter(color: vaprupDarkText),
+        labelLarge: GoogleFonts.inter(color: vaprupDarkText),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: vaprupBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: vaprupBlue,
+          side: const BorderSide(color: vaprupBlue, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
 }

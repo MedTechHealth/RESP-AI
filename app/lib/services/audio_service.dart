@@ -95,6 +95,10 @@ class AudioService {
     }
   }
 
+  Stream<Amplitude> onAmplitudeChanged() {
+    return _record.onAmplitudeChanged(const Duration(milliseconds: 100));
+  }
+
   Future<String?> stopRecording() async {
     try {
       final path = await _record.stop();
